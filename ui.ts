@@ -1,6 +1,6 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 
-import { getConfig } from "./config";
+import { getConfig, type TokenSpeedConfig } from "./config";
 import { STATUS_KEY } from "./constants";
 
 /**
@@ -23,11 +23,11 @@ const colorHex = (text: string, hex: string): string => {
 /**
  * Maps TPS value to a hex color string, or "" for no color
  *
+ * @param config The resolved configuration
  * @param tps The TPS value to colorize
  * @returns The hex color string
  */
-const getColor = (tps: number | null): string => {
-  const config = getConfig();
+const getColor = (config: TokenSpeedConfig, tps: number | null): string => {
   if (tps == null) return "";
 
   if (tps >= config.tpsBlazing) return config.colorBlazing;
@@ -59,7 +59,7 @@ export const renderStatus = (
   const label = theme.fg("dim", "⚡ TPS:");
   const measurement = value ? `${value} tok/s` : "--";
 
-  const color = getColor(tps);
+  const color = getColor(config, tps);
   const displayValue = colorHex(measurement, color);
 
   // Choose how much to show

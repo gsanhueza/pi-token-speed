@@ -28,6 +28,8 @@ export interface TokenSpeedConfig {
 
 /**
  * Validates that TPS thresholds are in ascending order.
+ *
+ * @param onWarning Optional callback for config warnings (e.g. invalid thresholds)
  * @returns true if tpsSlow < tpsMedium < tpsFast < tpsBlazing
  */
 function isValidThresholdOrder(
@@ -61,6 +63,8 @@ let userSettings: TokenSpeedConfig | null = null;
 
 /**
  * Reads ~/.pi/agent/settings.json and extracts the "STATUS_KEY" key if present.
+ *
+ * @param onWarning Optional callback for config warnings (e.g. invalid thresholds)
  * @returns The user settings, or an empty object if not found
  */
 function readUserSettings(
@@ -87,6 +91,7 @@ function readUserSettings(
 /**
  * Resolves the final config, merging user settings from ~/.pi/agent/settings.json
  * with the built-in constants as fallbacks.
+ *
  * @param onWarning Optional callback for config warnings (e.g. invalid thresholds)
  */
 export function getConfig(

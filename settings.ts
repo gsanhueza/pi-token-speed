@@ -1,9 +1,23 @@
-import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import { readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { STATUS_KEY } from "./constants";
 import { TokenSpeedConfig } from "./interfaces";
+
+const expandTilde = (value: string): string => {
+  if (value === "~") return homedir();
+  if (value.startsWith("~/") || (process.platform === "win32" && value.startsWith("~\\"))) {
+    return join(homedir(), value.slice(2));
+  }
+
+  return value;
+};
+
+const getAgentDir = (): string => {
+  const envDir = process.env.PI_CODING_AGENT_DIR;
+  return envDir ? expandTilde(envDir) : join(homedir(), ".pi", "agent");
+};
 
 /**
  * Reads ~/.pi/agent/settings.json and returns the full settings object.

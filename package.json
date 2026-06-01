@@ -27,10 +27,8 @@
       "prettier-plugin-organize-imports"
     ]
   },
-  "peerDependencies": {
-    "@earendil-works/pi-coding-agent": "*"
-  },
   "devDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
     "@types/node": "^25.6.0",
     "prettier-plugin-organize-imports": "^4.3.0"
   }

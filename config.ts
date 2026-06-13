@@ -66,7 +66,7 @@ export const getConfig = (): {
   // Validate display (default to tps)
   if (!["tps", "full"].includes(merged.display)) {
     errors.push(
-      `Invalid display "${merged.display}" — defaulting to "${DISPLAY_MODE}".`,
+      `- Invalid display "${merged.display}" — defaulting to "${DISPLAY_MODE}".`,
     );
     merged.display = DISPLAY_MODE;
   }
@@ -74,7 +74,7 @@ export const getConfig = (): {
   // Validate count strategy
   if (!isValidCountStrategy(merged)) {
     errors.push(
-      `Invalid countStrategy "${merged.countStrategy}" — defaulting to "${COUNT_STRATEGY}".`,
+      `- Invalid countStrategy "${merged.countStrategy}" — defaulting to "${COUNT_STRATEGY}".`,
     );
     merged.countStrategy = COUNT_STRATEGY;
   }
@@ -82,7 +82,7 @@ export const getConfig = (): {
   // Validate useProviderTokens
   if (typeof merged.useProviderTokens !== "boolean") {
     errors.push(
-      `Invalid useProviderTokens (expected boolean) — defaulting to ${USE_PROVIDER_TOKENS}.`,
+      `- Invalid useProviderTokens (expected boolean) — defaulting to ${USE_PROVIDER_TOKENS}.`,
     );
     merged.useProviderTokens = USE_PROVIDER_TOKENS;
   }
@@ -90,26 +90,24 @@ export const getConfig = (): {
   // Validate sliding window time
   if (!isValidSlidingWindow(merged)) {
     errors.push(
-      `Invalid slidingWindow "${merged.slidingWindow}" — defaulting to ${SLIDING_WINDOW}.`,
+      `- Invalid slidingWindow "${merged.slidingWindow}" — defaulting to ${SLIDING_WINDOW}.`,
     );
     merged.slidingWindow = SLIDING_WINDOW;
   }
 
   // Validate thresholds
   if (!isValidThresholdOrder(merged)) {
-    errors.push("");
-    errors.push("TPS thresholds must be in ascending order.");
+    errors.push("- TPS thresholds must be in ascending order.");
     errors.push(
-      `Found: ${merged.tpsSlow} < ${merged.tpsMedium} < ${merged.tpsFast} < ${merged.tpsBlazing}. `,
+      `  Found: ${merged.tpsSlow} < ${merged.tpsMedium} < ${merged.tpsFast} < ${merged.tpsBlazing}. `,
     );
   }
 
   // Validate colors
   if (!isValidColorDefinition(merged)) {
-    errors.push("");
     errors.push(
-      "Colors must be valid 24-bit truecolor ANSI hex strings (e.g., '#00ff88').",
-      `Found: ${merged.colorSlow} | ${merged.colorMedium} | ${merged.colorFast} | ${merged.colorBlazing}.`,
+      "- Colors must be valid 24-bit truecolor ANSI hex strings (e.g., '#00ff88').",
+      `  Found: ${merged.colorSlow} | ${merged.colorMedium} | ${merged.colorFast} | ${merged.colorBlazing}.`,
     );
   }
 

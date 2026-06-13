@@ -9,11 +9,6 @@ export const STATUS_KEY = "tokenSpeed";
 export const COMPACTION_THRESHOLD = 5000;
 
 /**
- * Sliding window duration (ms) for time-based TPS calculation
- */
-export const SLIDING_WINDOW = 1000;
-
-/**
  * TPS threshold above which speed is considered slow
  * Anything below this will not be colored
  */
@@ -53,3 +48,23 @@ export const COLOR_FAST = "#00ff88";
  * Color used when TPS is at or above the blazing threshold
  */
 export const COLOR_BLAZING = "#44ddff";
+
+/**
+ * Default sliding window duration (ms) for time-based TPS calculation
+ */
+export const SLIDING_WINDOW = 1000;
+
+/**
+ * Default display mode for the extension
+ */
+export const DISPLAY_MODE = "tps";
+
+/**
+ * Default selection for extension vs provider's counter
+ */
+export const USE_PROVIDER_TOKENS = false;
+
+/**
+ * Default counting strategy for the extension
+ */
+export const COUNT_STRATEGY = "direct";

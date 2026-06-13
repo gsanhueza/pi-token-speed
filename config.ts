@@ -3,11 +3,14 @@ import {
   COLOR_FAST,
   COLOR_MEDIUM,
   COLOR_SLOW,
+  COUNT_STRATEGY,
+  DISPLAY_MODE,
   SLIDING_WINDOW,
   TPS_THRESHOLD_BLAZING,
   TPS_THRESHOLD_FAST,
   TPS_THRESHOLD_MEDIUM,
   TPS_THRESHOLD_SLOW,
+  USE_PROVIDER_TOKENS,
 } from "./constants";
 import { TokenSpeedConfig } from "./interfaces";
 import { readUserSettings, writeUserSettings } from "./settings";
@@ -30,7 +33,7 @@ let errors: string[] = [];
  */
 const getDefaultConfig = (): TokenSpeedConfig => {
   return {
-    display: "tps",
+    display: DISPLAY_MODE,
     tpsSlow: TPS_THRESHOLD_SLOW,
     tpsMedium: TPS_THRESHOLD_MEDIUM,
     tpsFast: TPS_THRESHOLD_FAST,
@@ -40,8 +43,8 @@ const getDefaultConfig = (): TokenSpeedConfig => {
     colorFast: COLOR_FAST,
     colorBlazing: COLOR_BLAZING,
     slidingWindow: SLIDING_WINDOW,
-    useProviderTokens: false,
-    countStrategy: "direct",
+    useProviderTokens: USE_PROVIDER_TOKENS,
+    countStrategy: COUNT_STRATEGY,
   };
 };
 
@@ -62,24 +65,26 @@ export const getConfig = (): {
 
   // Validate display (default to tps)
   if (!["tps", "full"].includes(merged.display)) {
-    errors.push(`Invalid display "${merged.display}" — defaulting to "tps".`);
-    merged.display = "tps";
+    errors.push(
+      `Invalid display "${merged.display}" — defaulting to "${DISPLAY_MODE}".`,
+    );
+    merged.display = DISPLAY_MODE;
   }
 
   // Validate count strategy
   if (!isValidCountStrategy(merged)) {
     errors.push(
-      `Invalid countStrategy "${merged.countStrategy}" — defaulting to "direct".`,
+      `Invalid countStrategy "${merged.countStrategy}" — defaulting to "${COUNT_STRATEGY}".`,
     );
-    merged.countStrategy = "direct";
+    merged.countStrategy = COUNT_STRATEGY;
   }
 
   // Validate useProviderTokens
   if (typeof merged.useProviderTokens !== "boolean") {
     errors.push(
-      `Invalid useProviderTokens (expected boolean) — defaulting to false.`,
+      `Invalid useProviderTokens (expected boolean) — defaulting to ${USE_PROVIDER_TOKENS}.`,
     );
-    merged.useProviderTokens = false;
+    merged.useProviderTokens = USE_PROVIDER_TOKENS;
   }
 
   // Validate sliding window time

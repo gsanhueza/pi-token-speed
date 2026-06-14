@@ -32,7 +32,7 @@ let errors: string[] = [];
 /**
  * Retrieves the default configuration object.
  */
-const getDefaultConfig = (): TokenSpeedConfig => {
+export const getDefaultConfig = (): TokenSpeedConfig => {
   return {
     display: DISPLAY_MODE,
     tpsSlow: TPS_THRESHOLD_SLOW,

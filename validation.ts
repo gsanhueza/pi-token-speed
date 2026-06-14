@@ -3,7 +3,6 @@ import {
   COLOR_FAST,
   COLOR_MEDIUM,
   COLOR_SLOW,
-  DISPLAY_MODES,
   SLIDING_WINDOW,
   TPS_THRESHOLD_BLAZING,
   TPS_THRESHOLD_FAST,
@@ -11,6 +10,7 @@ import {
   TPS_THRESHOLD_SLOW,
 } from "./constants";
 import { type TokenSpeedConfig } from "./interfaces";
+import { COUNT_STRATEGY_LABELS, DISPLAY_LABELS } from "./options";
 
 /**
  * Validates that display mode is a recognized value.
@@ -20,7 +20,7 @@ import { type TokenSpeedConfig } from "./interfaces";
  */
 export const isValidDisplayMode = (config: TokenSpeedConfig): boolean => {
   const { display } = config;
-  return DISPLAY_MODES.includes(display);
+  return Object.keys(DISPLAY_LABELS).includes(display);
 };
 
 /**
@@ -95,5 +95,5 @@ export const isValidHex = (s: string): boolean => /^#[0-9a-fA-F]{6}$/.test(s);
  */
 export const isValidCountStrategy = (config: TokenSpeedConfig): boolean => {
   const { countStrategy } = config;
-  return ["estimate", "direct"].includes(countStrategy);
+  return Object.keys(COUNT_STRATEGY_LABELS).includes(countStrategy);
 };

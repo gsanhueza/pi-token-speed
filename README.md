@@ -74,6 +74,14 @@ You can customize the display, speed thresholds and colors by adding a `tokenSpe
 | `useProviderTokens` | boolean                        | `false`     | Opt-in: use provider-reported counts instead of this extension's own counter |
 | `countStrategy`     | `estimate`, `direct`           | `direct`    | Token counting strategy used by the extension's own counter                  |
 
+### Interactive Menu
+
+A small interactive menu is available when running `/tps` in the editor, where you can adjust:
+
+- **Display mode** — what to show in the status bar
+- **Use provider tokens** — use provider-reported counts instead of the extension's counter
+- **Count strategy** — how the extension counts tokens (`estimate` or `direct`)
+
 ### Sliding Window
 
 The sliding window determines how many recent tokens are used to calculate TPS. A larger window produces smoother readings at the cost of responsiveness; a smaller window reacts faster but can be noisier.
@@ -127,9 +135,9 @@ The `direct` strategy preserves the original behavior. Use `estimate` when your 
 
 ## Commands
 
-| Command | Description                                                    |
-| ------- | -------------------------------------------------------------- |
-| `/tps`  | Cycle through display modes: `tps` → `ttft` → `stats` → `full` |
+| Command | Description                                                                      |
+| ------- | -------------------------------------------------------------------------------- |
+| `/tps`  | Open settings menu — configure display mode, provider tokens, and count strategy |
 
 ## How It Works
 
@@ -142,6 +150,7 @@ The `direct` strategy preserves the original behavior. Use `estimate` when your 
 
 ## Dependencies
 
-| Dependency                        | Purpose                               |
-| --------------------------------- | ------------------------------------- |
-| `@earendil-works/pi-coding-agent` | Pi Coding Agent SDK (peer dependency) |
+| Peer dependency                   | Purpose             |
+| --------------------------------- | ------------------- |
+| `@earendil-works/pi-coding-agent` | Pi Coding Agent SDK |
+| `@earendil-works/pi-tui`          | Pi TUI SDK          |

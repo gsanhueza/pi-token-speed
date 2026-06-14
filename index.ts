@@ -2,40 +2,26 @@ import type {
   ExtensionAPI,
   ExtensionCommandContext,
   ExtensionContext,
-  ExtensionUIContext,
 } from "@earendil-works/pi-coding-agent";
 
-import { tpsCommand } from "./commands";
-import { getConfig } from "./config";
+import { CommandManager } from "./commands";
 import { TokenSpeedEngine } from "./engine";
-import { renderStatus } from "./ui";
+import { Renderer } from "./renderer";
 
-/**
- * One-time initialization that validates config and warns on errors.
- *
- * @param uiHandler The Pi UI handler for displaying notifications and status updates.
- */
-export function initialize(uiHandler: ExtensionUIContext): void {
-  const { errors } = getConfig();
-  if (errors.length === 0) return;
-
-  const message = ["[pi-token-speed]", ...errors].join("\n");
-  uiHandler.notify(message, "warning");
-}
-
-export default (pi: ExtensionAPI) => {
+export default async (pi: ExtensionAPI) => {
   const engine = new TokenSpeedEngine();
+  const renderer = new Renderer(engine);
+  const commands = new CommandManager(renderer);
 
   pi.registerCommand("tps", {
     description:
       "Open settings menu to configure display mode, token counting strategy, and provider token usage",
-    handler: (_: string, ctx: ExtensionCommandContext) =>
-      tpsCommand(ctx, engine),
+    handler: (_, ctx: ExtensionCommandContext) => commands.runTps(ctx),
   });
 
   pi.on("session_start", async (_, ctx: ExtensionContext) => {
-    initialize(ctx.ui);
-    renderStatus(ctx, engine, true);
+    await engine.initialize();
+    await renderer.initialize(ctx);
   });
 
   pi.on("message_start", async (event, _ctx: ExtensionContext) => {
@@ -57,7 +43,7 @@ export default (pi: ExtensionAPI) => {
 
     if (ev.type === "text_delta" || ev.type === "thinking_delta") {
       engine.recordDelta(ev.delta, ev.partial?.usage?.output);
-      renderStatus(ctx, engine);
+      await renderer.update(ctx);
     }
   });
 
@@ -68,7 +54,7 @@ export default (pi: ExtensionAPI) => {
     engine.reconcileTotal(event.message?.usage?.output ?? 0);
     engine.stop();
 
-    renderStatus(ctx, engine);
+    await renderer.update(ctx);
   });
 
   pi.on("turn_end", async () => {

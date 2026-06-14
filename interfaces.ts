@@ -1,9 +1,11 @@
+import type { CountStrategy, DisplayMode } from "./types";
+
 /**
  * Configuration for the token-speed extension.
  * All fields can be overridden via ~/.pi/agent/settings.json under the "tokenSpeed" key.
  */
 export interface TokenSpeedConfig {
-  display: "tps" | "ttft" | "stats" | "full";
+  display: DisplayMode;
   tpsSlow: number;
   tpsMedium: number;
   tpsFast: number;
@@ -14,5 +16,5 @@ export interface TokenSpeedConfig {
   colorBlazing: string;
   slidingWindow: number;
   useProviderTokens: boolean;
-  countStrategy: "estimate" | "direct";
+  countStrategy: CountStrategy;
 }

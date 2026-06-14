@@ -1,5 +1,5 @@
-import { getConfig } from "./config";
 import { COMPACTION_THRESHOLD } from "./constants";
+import { settings } from "./settings";
 
 export class TokenSpeedEngine {
   private _isStreaming = false;
@@ -12,12 +12,15 @@ export class TokenSpeedEngine {
   private _windowStartIndex = 0;
   private _countedUsageOutput = 0;
 
-  private _slidingWindow: number;
-  private _useProviderTokens: boolean;
-  private _countStrategy: "estimate" | "direct";
+  private _slidingWindow!: number;
+  private _useProviderTokens!: boolean;
+  private _countStrategy!: "estimate" | "direct";
 
-  constructor() {
-    const { config } = getConfig();
+  /**
+   * Loads configuration from disk. Must be called before any other method.
+   */
+  async initialize(): Promise<void> {
+    const { config } = await settings.getConfig();
     this._slidingWindow = config.slidingWindow;
     this._countStrategy = config.countStrategy;
     this._useProviderTokens = config.useProviderTokens;

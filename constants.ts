@@ -1,3 +1,5 @@
+import type { CountStrategy, DisplayMode } from "./types";
+
 /**
  * Identifier for the status bar entry
  */
@@ -50,6 +52,16 @@ export const COLOR_FAST = "#00ff88";
 export const COLOR_BLAZING = "#44ddff";
 
 /**
+ * Minimum sliding window duration (ms) — 100ms is the smallest meaningful window
+ */
+export const MIN_SLIDING_WINDOW = 100;
+
+/**
+ * Maximum sliding window duration (ms) — 30s is the largest practical window
+ */
+export const MAX_SLIDING_WINDOW = 30000;
+
+/**
  * Default sliding window duration (ms) for time-based TPS calculation
  */
 export const SLIDING_WINDOW = 1000;
@@ -57,7 +69,7 @@ export const SLIDING_WINDOW = 1000;
 /**
  * Default display mode for the extension
  */
-export const DISPLAY_MODE = "tps";
+export const DISPLAY_MODE: DisplayMode = "tps";
 
 /**
  * Default selection for extension vs provider's counter
@@ -67,4 +79,4 @@ export const USE_PROVIDER_TOKENS = false;
 /**
  * Default counting strategy for the extension
  */
-export const COUNT_STRATEGY = "direct";
+export const COUNT_STRATEGY: CountStrategy = "direct";

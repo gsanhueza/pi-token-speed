@@ -55,6 +55,11 @@ export const COLOR_BLAZING = "#44ddff";
 export const SLIDING_WINDOW = 1000;
 
 /**
+ * All available display modes for the extension
+ */
+export const DISPLAY_MODES = ["tps", "ttft", "stats", "full"] as const;
+
+/**
  * Default display mode for the extension
  */
 export const DISPLAY_MODE = "tps";

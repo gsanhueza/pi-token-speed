@@ -3,6 +3,7 @@ import {
   COLOR_FAST,
   COLOR_MEDIUM,
   COLOR_SLOW,
+  DISPLAY_MODES,
   SLIDING_WINDOW,
   TPS_THRESHOLD_BLAZING,
   TPS_THRESHOLD_FAST,
@@ -10,6 +11,17 @@ import {
   TPS_THRESHOLD_SLOW,
 } from "./constants";
 import { type TokenSpeedConfig } from "./interfaces";
+
+/**
+ * Validates that display mode is a recognized value.
+ *
+ * @param config The configuration object containing the display mode.
+ * @returns True if display is a valid mode; false otherwise
+ */
+export const isValidDisplayMode = (config: TokenSpeedConfig): boolean => {
+  const { display } = config;
+  return DISPLAY_MODES.includes(display);
+};
 
 /**
  * Validates that sliding window is a reasonable number

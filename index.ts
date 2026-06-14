@@ -28,7 +28,7 @@ export default (pi: ExtensionAPI) => {
   const engine = new TokenSpeedEngine();
 
   pi.registerCommand("tps", {
-    description: "Toggle display mode between 'tps' and 'full'",
+    description: "Cycle through display modes: tps → ttft → stats → full",
     handler: (_: string, ctx: ExtensionCommandContext) =>
       tpsCommand(ctx, engine),
   });

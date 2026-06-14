@@ -17,6 +17,7 @@ import { readUserSettings, writeUserSettings } from "./settings";
 import {
   isValidColorDefinition,
   isValidCountStrategy,
+  isValidDisplayMode,
   isValidSlidingWindow,
   isValidThresholdOrder,
 } from "./validation";
@@ -63,8 +64,8 @@ export const getConfig = (): {
 
   const merged = { ...defaultSettings, ...userSettings };
 
-  // Validate display (default to tps)
-  if (!["tps", "full"].includes(merged.display)) {
+  // Validate display mode
+  if (!isValidDisplayMode(merged)) {
     errors.push(
       `- Invalid display "${merged.display}" — defaulting to "${DISPLAY_MODE}".`,
     );

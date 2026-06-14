@@ -3,7 +3,7 @@
  * All fields can be overridden via ~/.pi/agent/settings.json under the "tokenSpeed" key.
  */
 export interface TokenSpeedConfig {
-  display: "tps" | "full";
+  display: "tps" | "ttft" | "stats" | "full";
   tpsSlow: number;
   tpsMedium: number;
   tpsFast: number;

@@ -42,47 +42,82 @@ const getColor = (config: TokenSpeedConfig, tps: number | null): string => {
 };
 
 /**
- * Renders the current TPS value with appropriate color.
+ * Formats the stats portion: "<x> tok in <y>s".
+ */
+const formatStats = (tokenCount: number, elapsedSeconds: number): string => {
+  if (elapsedSeconds <= 0) return `${tokenCount} tok`;
+  return `${tokenCount} tok in ${elapsedSeconds.toFixed(1)}s`;
+};
+
+/**
+ * Formats the TTFT portion: "TTFT: <time> ms".
+ */
+const formatTTFT = (ttft: number): string => {
+  return `TTFT: ${ttft} ms`;
+};
+
+/**
+ * Builds a suffix for the status bar after the TPS measurement
+ *
+ * @param display Display mode to check agains
+ * @param engine Engine to extract the data from
+ * @returns The suffix to append
+ */
+const buildSuffix = (display: string, engine: TokenSpeedEngine) => {
+  const { ttft, tokenCount, elapsedSeconds } = engine;
+
+  switch (display) {
+    case "ttft":
+      return ` (${formatTTFT(ttft)})`;
+
+    case "stats":
+      return ` (${formatStats(tokenCount, elapsedSeconds)})`;
+
+    case "full": {
+      const parts: string[] = [
+        formatStats(tokenCount, elapsedSeconds),
+        formatTTFT(ttft),
+      ];
+      return ` (${parts.join(" · ")})`;
+    }
+    default:
+      // Zero-width space
+      return "\u200b";
+  }
+};
+
+/**
+ * Renders the current status bar entry based on the configured display mode.
  *
  * @param ctx The extension context
  * @param engine The TokenSpeedEngine instance
+ * @param firstRun Whether this is the first render of the session
  */
 export const renderStatus = (
   ctx: ExtensionContext,
   engine: TokenSpeedEngine,
   firstRun: boolean = false,
 ): void => {
-  const { tps, tokenCount, elapsedSeconds, ttft } = engine;
-
   const { config } = getConfig();
   const theme = ctx.ui.theme;
+
+  // Handle first-run state (always show TPS placeholder)
+  if (firstRun) {
+    const text = `${theme.fg("dim", "⚡ TPS:")} --`;
+    return ctx.ui.setStatus(STATUS_KEY, text);
+  }
+
+  // Render TPS first
+  const { tps } = engine;
   const value = tps?.toFixed(1);
-
-  const label = theme.fg("dim", "⚡ TPS:");
-  if (firstRun) return ctx.ui.setStatus(STATUS_KEY, `${label} --`);
-
   const measurement = value ? `${value} tok/s` : "--";
 
   const color = getColor(config, tps);
   const displayValue = colorHex(measurement, color);
 
-  // Zero-width space to clean colors
-  let text = `${label} ${displayValue}\u200b`;
-
-  // Choose how much to show
-  if (config.display === "full") {
-    let tokensText = `${tokenCount} tok`;
-
-    if (elapsedSeconds > 0) {
-      // Add timings
-      tokensText = `${tokensText} in ${elapsedSeconds.toFixed(1)}s`;
-
-      // Add time-to-first-token
-      tokensText = `${tokensText} · TTFT: ${ttft} ms`;
-    }
-
-    text = `${text} (${tokensText})`;
-  }
+  // Build the suffix based on display mode
+  const suffix = buildSuffix(config.display, engine);
+  const text = `${theme.fg("dim", "⚡ TPS:")} ${displayValue}${suffix}`;
 
   ctx.ui.setStatus(STATUS_KEY, text);
 };

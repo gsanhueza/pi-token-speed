@@ -59,20 +59,20 @@ You can customize the display, speed thresholds and colors by adding a `tokenSpe
 
 ### Configuration Options
 
-| Option              | Type                 | Default     | Description                                                                  |
-| ------------------- | -------------------- | ----------- | ---------------------------------------------------------------------------- |
-| `display`           | `tps`, `full`        | `tps`       | Display only TPS or full information                                         |
-| `tpsSlow`           | number               | `0`         | Minimum TPS threshold ("slow")                                               |
-| `tpsMedium`         | number               | `15`        | TPS above this is "medium"                                                   |
-| `tpsFast`           | number               | `30`        | TPS above this is "fast"                                                     |
-| `tpsBlazing`        | number               | `45`        | TPS above this is "blazing"                                                  |
-| `colorSlow`         | string               | `"#ff4444"` | Color for slow tier                                                          |
-| `colorMedium`       | string               | `"#ffaa00"` | Color for medium tier                                                        |
-| `colorFast`         | string               | `"#00ff88"` | Color for fast tier                                                          |
-| `colorBlazing`      | string               | `"#44ddff"` | Color for blazing tier                                                       |
-| `slidingWindow`     | number               | `1000`      | Sliding window duration in ms                                                |
-| `useProviderTokens` | boolean              | `false`     | Opt-in: use provider-reported counts instead of this extension's own counter |
-| `countStrategy`     | `estimate`, `direct` | `direct`    | Token counting strategy used by the extension's own counter                  |
+| Option              | Type                           | Default     | Description                                                                  |
+| ------------------- | ------------------------------ | ----------- | ---------------------------------------------------------------------------- |
+| `display`           | `tps`, `ttft`, `stats`, `full` | `tps`       | Which metrics to display (see Display Modes below)                           |
+| `tpsSlow`           | number                         | `0`         | Minimum TPS threshold ("slow")                                               |
+| `tpsMedium`         | number                         | `15`        | TPS above this is "medium"                                                   |
+| `tpsFast`           | number                         | `30`        | TPS above this is "fast"                                                     |
+| `tpsBlazing`        | number                         | `45`        | TPS above this is "blazing"                                                  |
+| `colorSlow`         | string                         | `"#ff4444"` | Color for slow tier                                                          |
+| `colorMedium`       | string                         | `"#ffaa00"` | Color for medium tier                                                        |
+| `colorFast`         | string                         | `"#00ff88"` | Color for fast tier                                                          |
+| `colorBlazing`      | string                         | `"#44ddff"` | Color for blazing tier                                                       |
+| `slidingWindow`     | number                         | `1000`      | Sliding window duration in ms                                                |
+| `useProviderTokens` | boolean                        | `false`     | Opt-in: use provider-reported counts instead of this extension's own counter |
+| `countStrategy`     | `estimate`, `direct`           | `direct`    | Token counting strategy used by the extension's own counter                  |
 
 ### Sliding Window
 
@@ -116,11 +116,20 @@ When `useProviderTokens` is `false` (default) or when the provider doesn't repor
 
 The `direct` strategy preserves the original behavior. Use `estimate` when your server streams in small chunks — it approximates the real token count from the delta text, giving a more meaningful TPS reading.
 
+## Display Modes
+
+| Mode    | Description                                                                 |
+| ------- | --------------------------------------------------------------------------- |
+| `tps`   | `⚡ TPS: 25.0 tok/s` — TPS with color-coded speed tier                      |
+| `ttft`  | `⚡ TPS: 25.0 tok/s (TTFT: 450 ms)` — TPS + time-to-first-token             |
+| `stats` | `⚡ TPS: 25.0 tok/s (150 tok in 6.0s)` — TPS + token count and elapsed time |
+| `full`  | `⚡ TPS: 25.0 tok/s (150 tok in 6.0s · TTFT: 450 ms)` — everything          |
+
 ## Commands
 
-| Command | Description                                                                                                |
-| ------- | ---------------------------------------------------------------------------------------------------------- |
-| `/tps`  | Toggle display mode between `tps` (just the speed) and `full` (speed, token count, elapsed time, and TTFT) |
+| Command | Description                                                    |
+| ------- | -------------------------------------------------------------- |
+| `/tps`  | Cycle through display modes: `tps` → `ttft` → `stats` → `full` |
 
 ## How It Works
 

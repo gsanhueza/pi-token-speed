@@ -32,8 +32,9 @@ export class TokenSpeedEngine {
    * Uses provider-reported output-token count when available.
    * Otherwise, falls back to this extension's counter.
    *
-   * Depending on the count strategy, it counts 1 token per delta (direct),
-   * or approximates number of tokens from the delta text (estimate).
+   * Counting behavior:
+   * - `direct`: Counts 1 token per delta (text, thinking, toolcall)
+   * - `estimate`: Approximates tokens from delta text using word-boundary regex
    *
    * @param delta The text/thinking delta string.
    * @param usageOutput Provider-reported cumulative output-token count (optional).
@@ -188,6 +189,9 @@ export class TokenSpeedEngine {
   /**
    * Estimates tokens in a text string using a word-boundary regex.
    * Used as a fallback when the provider doesn't report token counts.
+   *
+   * The regex matches word characters and non-whitespace punctuation:
+   * `/\w+|[\^\s\w]/g` — counts words and punctuation separately
    *
    * @param text The text to estimate token count for.
    * @returns The estimated number of tokens.

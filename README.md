@@ -122,7 +122,7 @@ When `useProviderTokens` is `false` (default) or when the provider doesn't repor
 | `direct` (default) | Counts each delta as 1 token        |
 | `estimate`         | Approximates tokens from delta text |
 
-The `direct` strategy preserves the original behavior. Use `estimate` when your server streams in small chunks — it approximates the real token count from the delta text, giving a more meaningful TPS reading.
+The `direct` strategy is fast and preserves the original behavior — it counts each streaming delta as 1 token, including toolcalls for `edit` and `write` operations. Use `estimate` when your server streams in small chunks — it approximates the real token count from the delta text, giving a more meaningful TPS reading.
 
 ## Display Modes
 

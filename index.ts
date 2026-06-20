@@ -58,8 +58,8 @@ export default async (pi: ExtensionAPI) => {
     } else if (ev.type === "toolcall_delta") {
       const toolCall = ev.partial?.content?.[ev.contentIndex];
 
-      // Only edit/write tools are processed (token generation, relevant)
-      // The other tools are skipped (prompt processing, not relevant)
+      // Only edit/write tools are counted (token generation, relevant)
+      // Other tools are skipped (prompt processing, not relevant)
       if (
         toolCall?.type === "toolCall" &&
         (toolCall.name === "edit" || toolCall.name === "write")

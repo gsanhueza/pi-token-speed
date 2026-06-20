@@ -25,6 +25,11 @@ import { Validator } from "./validation";
  * caching, and persistence to ~/.pi/agent/settings.json.
  *
  * Use the exported `settings` singleton — do not instantiate directly.
+ *
+ * Token counting behavior:
+ * - Text/thinking deltas: Counted as 1 token (direct) or estimated from content (estimate)
+ * - Toolcall deltas (edit/write): Counted as 1 token (direct) or estimated from content (estimate)
+ * - Other toolcalls: Not counted (prompt processing, not relevant)
  */
 export class Settings {
   private cachedConfig: TokenSpeedConfig | null = null;

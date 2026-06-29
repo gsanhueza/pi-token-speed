@@ -6,9 +6,12 @@ const TOKEN_REGEX = /\w+|[^\s\w]/g;
 
 export class TokenSpeedEngine {
   private _isStreaming = false;
+  private _isPaused = false;
+
   private _tokenCount = 0;
   private _startTime = 0;
   private _endTime = 0;
+
   private _ttftStart = 0;
   private _ttftEnd = 0;
   private _tps = 0;
@@ -46,6 +49,7 @@ export class TokenSpeedEngine {
    */
   recordDelta(delta: string, usageOutput?: number): void {
     if (!this._isStreaming) return;
+    if (this._isPaused) this.resume();
 
     const shouldUseProviderTokens =
       this._useProviderTokens &&
@@ -176,6 +180,22 @@ export class TokenSpeedEngine {
     this._isStreaming = false;
     this._endTime = Date.now();
     this._slidingWindow.reset();
+  }
+
+  /**
+   * Pauses the timer. Call before a non-edit/write tool call ends.
+   * The next `recordDelta` will call `resume()` to reset `_startTime`.
+   */
+  pause(): void {
+    this._isPaused = true;
+  }
+
+  /**
+   * Resumes the timer by resetting `_startTime` to now.
+   */
+  private resume(): void {
+    this._startTime = Date.now();
+    this._isPaused = false;
   }
 
   /**

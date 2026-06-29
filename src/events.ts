@@ -105,6 +105,16 @@ export class EventManager {
         this.renderer.update(ctx);
       }
     }
+
+    if (ev.type === "toolcall_end") {
+      const toolCall = ev.partial?.content?.[ev.contentIndex ?? 0];
+      if (toolCall?.type !== "toolCall") return;
+
+      // Pause the timer for prompt processing tools, so they don't skew the average
+      if (toolCall.name !== "edit" && toolCall.name !== "write") {
+        this.engine.pause();
+      }
+    }
   }
 
   /**

@@ -58,6 +58,10 @@ You can customize the display, speed thresholds and colors by adding a `tokenSpe
 }
 ```
 
+### Configuration Validation
+
+Invalid configuration values are automatically corrected to their defaults. A warning notification is displayed in the Pi status bar at session start listing any corrections made. The `slidingWindow` value is also clamped between `100ms` and `30000ms` (30s).
+
 ### Configuration Options
 
 | Option              | Type                           | Default     | Description                                                      |
@@ -127,6 +131,12 @@ When `useProviderTokens` is `false` (default) or when the provider doesn't repor
 
 The `direct` strategy is fast and preserves the original behavior — it counts each streaming delta as 1 token, including toolcalls for `edit` and `write` operations. Use `estimate` when your server streams in small chunks — it approximates the real token count from the delta text, giving a more meaningful TPS reading.
 
+> **Note:** Only `edit` and `write` tool call deltas are counted. Other tool calls (prompt processing) are excluded from token counting.
+
+### Timer Pausing
+
+The extension automatically pauses the TPS timer when a prompt processing tool call ends (any tool other than `edit` or `write`). This prevents tool processing time from skewing the TPS calculation. The timer resumes when the next token delta arrives.
+
 ### End-of-Stream TPS Behavior
 
 After streaming ends, the `endTpsBehavior` option controls what TPS value is displayed:
@@ -157,12 +167,13 @@ This is also configurable via the `/tps` interactive menu.
 
 1. **Session Start** — Renders the initial status bar entry showing `⚡ TPS: --`
 2. **Message Start** — When the assistant begins streaming, the engine starts tracking
-3. **TTFT Measurement** — When the user message starts, a timer begins. The moment the first token (text, thinking, or tool call) is emitted, the elapsed time is recorded as the time-to-first-token (TTFT) in milliseconds
+3. **TTFT Measurement** — When the user message starts, a timer begins. The moment the first content block starts (`text_start`, `thinking_start`, or `toolcall_start`), the elapsed time is recorded as the time-to-first-token (TTFT) in milliseconds
 4. **Token Update** — Each text/thinking delta is recorded. If `useProviderTokens` is `true` and the provider reports token counts, those are used directly; otherwise the extension's own counter (controlled by `countStrategy`) is used
 5. **Sliding Window** — TPS is calculated using a configurable time window of token timestamps. When streaming ends, behavior depends on `endTpsBehavior`:
    - `average` (default): returns the overall average TPS for consistency with stats.
    - `last`: returns the last sliding window measurement.
 6. **Message End** — The authoritative token count (if available) is used to snap the total, ensuring the final average is exact
+7. **Turn End** — If the engine is still streaming when a `turn_end` event fires, streaming is stopped to ensure the status bar reflects the final state.
 
 ## Dependencies
 

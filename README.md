@@ -166,14 +166,13 @@ This is also configurable via the `/tps` interactive menu.
 ## How It Works
 
 1. **Session Start** — Renders the initial status bar entry showing `⚡ TPS: --`
-2. **Message Start** — When the assistant begins streaming, the engine starts tracking
-3. **TTFT Measurement** — When the user message starts, a timer begins. The moment the first content block starts (`text_start`, `thinking_start`, or `toolcall_start`), the elapsed time is recorded as the time-to-first-token (TTFT) in milliseconds
+2. **Message Start** — When a user message starts, TTFT measurement begins
+3. **First Token & Streaming Start** — The moment the first content block starts (`text_start`, `thinking_start`, or `toolcall_start`), the TTFT is recorded and the streaming engine starts tracking
 4. **Token Update** — Each text/thinking delta is recorded. If `useProviderTokens` is `true` and the provider reports token counts, those are used directly; otherwise the extension's own counter (controlled by `countStrategy`) is used
 5. **Sliding Window** — TPS is calculated using a configurable time window of token timestamps. When streaming ends, behavior depends on `endTpsBehavior`:
    - `average` (default): returns the overall average TPS for consistency with stats.
    - `last`: returns the last sliding window measurement.
-6. **Message End** — The authoritative token count (if available) is used to snap the total, ensuring the final average is exact
-7. **Turn End** — If the engine is still streaming when a `turn_end` event fires, streaming is stopped to ensure the status bar reflects the final state.
+6. **Agent End** — The authoritative token count (if available) is used to snap the total, ensuring the final average is exact. Streaming is stopped.
 
 ## Dependencies
 

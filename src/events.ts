@@ -1,4 +1,7 @@
-import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type {
+  AgentEndEvent,
+  ExtensionContext,
+} from "@earendil-works/pi-coding-agent";
 import { TOKEN_GENERATION_TOOLS } from "./constants";
 import { TokenSpeedEngine } from "./engine";
 import { Renderer } from "./renderer";
@@ -64,9 +67,6 @@ export class EventManager {
     if (event.message?.role === "user") {
       this.engine.startTTFT();
     }
-    if (event.message?.role === "assistant") {
-      this.engine.start();
-    }
   }
 
   /**
@@ -87,6 +87,7 @@ export class EventManager {
       ev.type === "toolcall_start"
     ) {
       this.engine.stopTTFT();
+      this.engine.start();
       return;
     }
 
@@ -124,25 +125,16 @@ export class EventManager {
    * @param event The message_end event payload.
    * @param ctx The Pi extension context.
    */
-  handleMessageEnd(
-    event: { message?: { role?: string; usage?: { output?: number } } },
-    ctx: ExtensionContext,
-  ): void {
-    if (event.message?.role !== "assistant" || !this.engine.isStreaming) return;
-
-    this.engine.reconcileTotal(event.message?.usage?.output ?? 0);
+  handleAgentEnd(event: AgentEndEvent, ctx: ExtensionContext): void {
     this.engine.stop();
 
-    this.renderer.update(ctx);
-  }
+    const outputTokens = event.messages.reduce((acc, curr) => {
+      if ("usage" in curr) return acc + curr.usage.output;
+      return acc;
+    }, 0);
 
-  /**
-   * Stops streaming if still active when a turn ends.
-   */
-  handleTurnEnd(): void {
-    if (this.engine.isStreaming) {
-      this.engine.stop();
-    }
+    this.engine.reconcileTotal(outputTokens);
+    this.renderer.update(ctx);
   }
 
   /**

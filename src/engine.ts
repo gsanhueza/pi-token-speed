@@ -14,6 +14,10 @@ export class TokenSpeedEngine {
 
   private _ttftStart = 0;
   private _ttftEnd = 0;
+
+  private _startPause = 0;
+  private _pausedMs = 0;
+
   private _tps = 0;
   private _countedUsageOutput = 0;
 
@@ -98,8 +102,8 @@ export class TokenSpeedEngine {
    */
   get elapsedMs(): number {
     if (this._startTime === 0) return 0;
-    if (this.isStreaming) return Date.now() - this._startTime;
-    return this._endTime - this._startTime;
+    if (this.isStreaming) return Date.now() - this._startTime - this._pausedMs;
+    return this._endTime - this._startTime - this._pausedMs;
   }
 
   /** Returns elapsed seconds since stream start (0 if not started). */
@@ -139,6 +143,8 @@ export class TokenSpeedEngine {
    * Starts a new streaming session.
    */
   start(): void {
+    if (this._isStreaming) return;
+
     this._tokenCount = 0;
     this._isStreaming = true;
     this._startTime = Date.now();
@@ -146,6 +152,7 @@ export class TokenSpeedEngine {
     this._slidingWindow.reset();
     this._countedUsageOutput = 0;
     this._tps = 0;
+    this._pausedMs = 0;
   }
 
   /**
@@ -159,18 +166,10 @@ export class TokenSpeedEngine {
   /**
    * Records the end timestamp for TTFT measurement.
    * Only captures once per stream (guarded by _ttftEnd).
-   *
-   * Also resets _startTime to this moment, because TTFT represents the
-   * gap before tokens start flowing — TPS calculations should only measure
-   * the period during which tokens are actually being produced.
    */
   stopTTFT(): void {
     if (this._ttftEnd !== 0) return;
-
-    // Align streaming window start with the first token arrival
-    const now = Date.now();
-    this._ttftEnd = now;
-    this._startTime = now;
+    this._ttftEnd = Date.now();
   }
 
   /**
@@ -184,18 +183,19 @@ export class TokenSpeedEngine {
 
   /**
    * Pauses the timer. Call before a non-edit/write tool call ends.
-   * The next `recordDelta` will call `resume()` to reset `_startTime`.
+   * The next `recordDelta` will call `resume()`.
    */
   pause(): void {
     this._isPaused = true;
+    this._startPause = Date.now();
   }
 
   /**
-   * Resumes the timer by resetting `_startTime` to now.
+   * Resumes the timer, updating the paused time.
    */
   private resume(): void {
-    this._startTime = Date.now();
     this._isPaused = false;
+    this._pausedMs += Date.now() - this._startPause;
   }
 
   /**

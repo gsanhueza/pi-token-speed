@@ -1,4 +1,5 @@
 import type {
+  AgentEndEvent,
   ExtensionAPI,
   ExtensionCommandContext,
   ExtensionContext,
@@ -32,7 +33,7 @@ export default async (pi: ExtensionAPI) => {
   });
 
   // Streaming lifecycle
-  pi.on("message_start", (event, _ctx: ExtensionContext) => {
+  pi.on("message_start", (event) => {
     eventManager.handleMessageStart(event);
   });
 
@@ -40,11 +41,7 @@ export default async (pi: ExtensionAPI) => {
     eventManager.handleMessageUpdate(event, ctx);
   });
 
-  pi.on("message_end", (event, ctx: ExtensionContext) => {
-    eventManager.handleMessageEnd(event, ctx);
-  });
-
-  pi.on("turn_end", () => {
-    eventManager.handleTurnEnd();
+  pi.on("agent_end", (event: AgentEndEvent, ctx: ExtensionContext) => {
+    eventManager.handleAgentEnd(event, ctx);
   });
 };

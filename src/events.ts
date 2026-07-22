@@ -128,8 +128,14 @@ export class EventManager {
   handleAgentEnd(event: AgentEndEvent, ctx: ExtensionContext): void {
     this.engine.stop();
 
+    // Only assistant and toolResult messages carry usage data
     const outputTokens = event.messages.reduce((acc, curr) => {
-      if ("usage" in curr) return acc + curr.usage.output;
+      if (curr.role === "assistant") {
+        return acc + curr.usage.output;
+      }
+      if (curr.role === "toolResult") {
+        return acc + (curr.usage?.output ?? 0);
+      }
       return acc;
     }, 0);
 

@@ -1,6 +1,6 @@
 {
   "name": "pi-token-speed",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Pi extension to measure tokens per second via sliding window.",
   "keywords": [
     "pi",

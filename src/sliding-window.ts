@@ -30,8 +30,11 @@ export class SlidingWindow {
   /**
    * Calculates tokens-per-second within the sliding window.
    *
-   * Divides tokens in the window by the actual time span (clamped to a
-   * minimum of `MIN_SLIDING_WINDOW` to avoid burst spikes).
+   * Divides tokens in the window by the actual time span. When the span
+   * is artificially short (e.g. after a stall followed by a burst), extends
+   * the span to include the gap before the burst by looking at the last
+   * event before the window's first event.
+   *
    * Returns 0 if no tokens are in the window.
    *
    * @param now Current timestamp in milliseconds.
@@ -60,9 +63,23 @@ export class SlidingWindow {
 
     if (windowTokenCount === 0) return 0;
 
-    // Use the actual span but clamp to a minimum to avoid burst spikes.
-    const rawSpan = now - this.events[this.windowStartIndex].time;
-    const span = Math.max(rawSpan, MIN_SLIDING_WINDOW);
+    // Measure span from the first in-window event.
+    let spanStart = this.events[this.windowStartIndex].time;
+
+    // Check if all events in the window share the same timestamp.
+    // This indicates a flush after a stall (provider buffering),
+    // where all tokens arrive at once with no time between them.
+    const firstEventTime = this.events[this.windowStartIndex].time;
+    const lastEventTime = this.events[this.events.length - 1].time;
+    const allSameTimestamp = firstEventTime === lastEventTime;
+
+    // If all events are from the same timestamp and there's a previous
+    // event, extend the span to include the gap before the burst.
+    if (allSameTimestamp && this.windowStartIndex > 0) {
+      spanStart = this.events[this.windowStartIndex - 1].time;
+    }
+
+    const span = Math.max(now - spanStart, MIN_SLIDING_WINDOW);
     return (1000 * windowTokenCount) / span;
   }
 

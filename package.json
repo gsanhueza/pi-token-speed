@@ -1,6 +1,6 @@
 {
   "name": "pi-token-speed",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Pi extension to measure tokens per second via sliding window.",
   "keywords": [
     "pi",
@@ -32,7 +32,7 @@
     "@earendil-works/pi-tui": ">=0.81.1"
   },
   "devDependencies": {
-    "@types/node": "^26.1.1",
+    "@types/node": "^26.4.0",
     "prettier-plugin-organize-imports": "^4.3.0"
   }
 }

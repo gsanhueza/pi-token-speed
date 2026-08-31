@@ -31,4 +31,5 @@ export interface TokenSpeedConfig {
   useProviderTokens: boolean;
   countStrategy: CountStrategy;
   endTpsBehavior: EndTpsBehavior;
+  showIcon: boolean;
 }

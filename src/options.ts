@@ -37,3 +37,11 @@ export const TOGGLE_LABELS: Record<"on" | "off", string> = {
   on: "On",
   off: "Off",
 };
+
+/**
+ * Human-readable labels for showIcon toggle values.
+ */
+export const SHOW_ICON_LABELS: Record<"on" | "off", string> = {
+  on: "Show icon (⚡)",
+  off: "Hide icon",
+};

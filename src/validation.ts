@@ -13,6 +13,7 @@ import {
   COUNT_STRATEGY,
   DISPLAY_MODE,
   END_TPS_BEHAVIOR,
+  SHOW_ICON,
   SLIDING_WINDOW,
   TPS_THRESHOLD_BLAZING,
   TPS_THRESHOLD_FAST,
@@ -61,6 +62,7 @@ export class Validator {
       config.endTpsBehavior,
       errors,
     );
+    response.showIcon = this.checkShowIcon(config.showIcon, errors);
 
     // Error-only checks (no correction)
     const thresholdResult = this.isValidThresholdOrder(config);
@@ -254,5 +256,22 @@ export class Validator {
     );
 
     return END_TPS_BEHAVIOR;
+  }
+
+  /**
+   * Checks that showIcon is a boolean, defaulting if invalid.
+   *
+   * @param value The showIcon value to check.
+   * @param errors The shared errors array to push to if invalid.
+   * @returns The validated (or defaulted) boolean value.
+   */
+  private static checkShowIcon(value: unknown, errors: string[]): boolean {
+    if (typeof value === "boolean") return value;
+
+    errors.push(
+      `- Invalid showIcon (expected boolean) — defaulting to ${SHOW_ICON}.`,
+    );
+
+    return SHOW_ICON;
   }
 }

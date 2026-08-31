@@ -19,7 +19,7 @@ export default async (pi: ExtensionAPI) => {
   // Command registration
   pi.registerCommand("tps", {
     description:
-      "Open settings menu to configure display mode, token counting strategy, and provider token usage",
+      "Open settings menu to configure display mode, token counting strategy, provider token usage, and icon visibility",
     handler: (_, ctx: ExtensionCommandContext) => commands.runTps(ctx),
   });
 

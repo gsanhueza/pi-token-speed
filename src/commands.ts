@@ -12,6 +12,7 @@ import {
   COUNT_STRATEGY_LABELS,
   DISPLAY_LABELS,
   END_TPS_BEHAVIOR_LABELS,
+  SHOW_ICON_LABELS,
   TOGGLE_LABELS,
 } from "./options";
 import type { Renderer } from "./renderer";
@@ -25,6 +26,7 @@ enum Options {
   USE_PROVIDER_TOKENS = "useProviderTokens",
   COUNT_STRATEGY = "countStrategy",
   END_TPS_BEHAVIOR = "endTpsBehavior",
+  SHOW_ICON = "showIcon",
 }
 
 /**
@@ -79,6 +81,8 @@ export class CommandManager {
       await settings.setConfig({
         endTpsBehavior: newValue as EndTpsBehavior,
       });
+    } else if (id === Options.SHOW_ICON) {
+      await settings.setConfig({ showIcon: newValue === "on" });
     }
 
     // Re-render with the latest config
@@ -146,6 +150,13 @@ export class CommandManager {
           "What to show after streaming: overall average or last sliding window value",
         currentValue: config.endTpsBehavior,
         values: Object.keys(END_TPS_BEHAVIOR_LABELS) as EndTpsBehavior[],
+      },
+      {
+        id: Options.SHOW_ICON,
+        label: "Show icon",
+        description: "Toggle the lightning bolt icon (⚡) in the status bar",
+        currentValue: config.showIcon ? "on" : "off",
+        values: Object.keys(SHOW_ICON_LABELS),
       },
     ];
   }

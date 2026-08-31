@@ -69,3 +69,8 @@ export const COUNT_STRATEGY: CountStrategy = "direct";
  * Behavior for TPS display after streaming ends.
  */
 export const END_TPS_BEHAVIOR: EndTpsBehavior = "average";
+
+/**
+ * Whether to show the ⚡ icon in the status bar.
+ */
+export const SHOW_ICON = true;

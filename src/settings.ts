@@ -12,6 +12,7 @@ import {
   COUNT_STRATEGY,
   DISPLAY_MODE,
   END_TPS_BEHAVIOR,
+  SHOW_ICON,
   SLIDING_WINDOW,
   TPS_THRESHOLD_BLAZING,
   TPS_THRESHOLD_FAST,
@@ -65,6 +66,7 @@ export class Settings {
       useProviderTokens: USE_PROVIDER_TOKENS,
       countStrategy: COUNT_STRATEGY,
       endTpsBehavior: END_TPS_BEHAVIOR,
+      showIcon: SHOW_ICON,
     };
   }
 

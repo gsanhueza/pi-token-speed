@@ -53,7 +53,8 @@ You can customize the display, speed thresholds and colors by adding a `tokenSpe
     "display": "tps",
     "useProviderTokens": false,
     "countStrategy": "direct",
-    "endTpsBehavior": "average"
+    "endTpsBehavior": "average",
+    "showIcon": true
   }
 }
 ```
@@ -79,6 +80,7 @@ Invalid configuration values are automatically corrected to their defaults. A wa
 | `useProviderTokens` | boolean                        | `false`     | Opt-in: use provider-reported count instead of the extension one |
 | `countStrategy`     | `estimate`, `direct`           | `direct`    | Token counting strategy used by the extension's own counter      |
 | `endTpsBehavior`    | `average`, `last`              | `average`   | What to show after streaming ends                                |
+| `showIcon`          | boolean                        | `true`      | Whether to show the ⚡ icon in the status bar                    |
 
 ### Interactive Menu
 
@@ -88,6 +90,7 @@ A small interactive menu is available when running `/tps` in the editor, where y
 - **Use provider tokens** — use provider-reported counts instead of the extension's counter
 - **Count strategy** — how the extension counts tokens (`estimate` or `direct`)
 - **End-of-stream TPS** — what to show after streaming ends (`average` or `last`)
+- **Show ⚡ icon** — toggle the lightning bolt icon in the status bar
 
 ### Sliding Window
 
@@ -168,6 +171,16 @@ This is also configurable via the `/tps` interactive menu.
 | `ttft`  | `⚡ TPS: 25.0 tok/s (TTFT: 450 ms)` — TPS + time-to-first-token             |
 | `stats` | `⚡ TPS: 25.0 tok/s (150 tok in 6.0s)` — TPS + token count and elapsed time |
 | `full`  | `⚡ TPS: 25.0 tok/s (150 tok in 6.0s · TTFT: 450 ms)` — everything          |
+
+> **Note:** Set `showIcon: false` to hide the `⚡` prefix, rendering just `TPS: 25.0 tok/s`.
+
+### Example: Minimal status bar
+
+With `showIcon: false` and `display: "tps"`, the status bar shows:
+
+```
+TPS: 25.0 tok/s
+```
 
 ## Commands
 

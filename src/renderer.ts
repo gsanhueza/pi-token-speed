@@ -89,7 +89,10 @@ export class Renderer {
    */
   initialize(ctx: ExtensionContext): void {
     const theme = ctx.ui.theme;
-    const text = `${theme.fg("dim", "⚡ TPS:")} --`;
+    const config = settings.getConfig();
+    const icon = config.showIcon ? "⚡ " : "";
+    const prefix = theme.fg("dim", `${icon}TPS:`);
+    const text = `${prefix} --`;
     ctx.ui.setStatus(STATUS_KEY, text);
   }
 
@@ -112,7 +115,10 @@ export class Renderer {
 
     // Build the suffix based on display mode
     const suffix = this.buildSuffix(config.display);
-    const text = `${theme.fg("dim", "⚡ TPS:")} ${displayValue}${suffix}`;
+
+    const icon = config.showIcon ? "⚡ " : "";
+    const prefix = theme.fg("dim", `${icon}TPS:`);
+    const text = `${prefix} ${displayValue}${suffix}`;
 
     ctx.ui.setStatus(STATUS_KEY, text);
   }

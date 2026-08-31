@@ -11,9 +11,9 @@ import {
   COLOR_MEDIUM,
   COLOR_SLOW,
   COUNT_STRATEGY,
+  DEFAULT_ICON,
   DISPLAY_MODE,
   END_TPS_BEHAVIOR,
-  SHOW_ICON,
   SLIDING_WINDOW,
   TPS_THRESHOLD_BLAZING,
   TPS_THRESHOLD_FAST,
@@ -63,7 +63,7 @@ export class Validator {
       config.endTpsBehavior,
       errors,
     );
-    response.showIcon = this.checkShowIcon(config.showIcon, errors);
+    response.icon = this.checkIcon(config.icon, errors);
     response.updateInterval = this.checkUpdateInterval(
       config.updateInterval,
       errors,
@@ -264,20 +264,20 @@ export class Validator {
   }
 
   /**
-   * Checks that showIcon is a boolean, defaulting if invalid.
+   * Checks that icon is a string, defaulting if invalid.
    *
-   * @param value The showIcon value to check.
+   * @param value The icon value to check.
    * @param errors The shared errors array to push to if invalid.
-   * @returns The validated (or defaulted) boolean value.
+   * @returns The validated (or defaulted) string value.
    */
-  private static checkShowIcon(value: unknown, errors: string[]): boolean {
-    if (typeof value === "boolean") return value;
+  private static checkIcon(value: unknown, errors: string[]): string {
+    if (typeof value === "string") return value;
 
     errors.push(
-      `- Invalid showIcon (expected boolean) — defaulting to ${SHOW_ICON}.`,
+      `- Invalid icon (expected string) — defaulting to "${DEFAULT_ICON}".`,
     );
 
-    return SHOW_ICON;
+    return DEFAULT_ICON;
   }
 
   /**

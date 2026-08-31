@@ -60,7 +60,7 @@ export class Renderer {
     // Build the suffix based on display mode
     const suffix = this.buildSuffix(config.display);
 
-    const icon = config.showIcon ? "⚡ " : "";
+    const icon = config.icon ? `${config.icon} ` : "";
     const prefix = theme.fg("dim", `${icon}TPS:`);
     const text = `${prefix} ${displayValue}${suffix}`;
 
@@ -143,7 +143,7 @@ export class Renderer {
   initialize(ctx: ExtensionContext): void {
     const theme = ctx.ui.theme;
     const config = settings.getConfig();
-    const icon = config.showIcon ? "⚡ " : "";
+    const icon = config.icon ? `${config.icon} ` : "";
     const prefix = theme.fg("dim", `${icon}TPS:`);
     const text = `${prefix} --`;
     ctx.ui.setStatus(STATUS_KEY, text);

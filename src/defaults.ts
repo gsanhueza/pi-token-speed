@@ -71,9 +71,9 @@ export const COUNT_STRATEGY: CountStrategy = "direct";
 export const END_TPS_BEHAVIOR: EndTpsBehavior = "average";
 
 /**
- * Whether to show the ⚡ icon in the status bar.
+ * Default icon shown in the status bar.
  */
-export const SHOW_ICON = true;
+export const DEFAULT_ICON = "⚡";
 
 /**
  * Status bar update interval in milliseconds.

@@ -10,9 +10,9 @@ import {
   COLOR_MEDIUM,
   COLOR_SLOW,
   COUNT_STRATEGY,
+  DEFAULT_ICON,
   DISPLAY_MODE,
   END_TPS_BEHAVIOR,
-  SHOW_ICON,
   SLIDING_WINDOW,
   TPS_THRESHOLD_BLAZING,
   TPS_THRESHOLD_FAST,
@@ -67,7 +67,7 @@ export class Settings {
       useProviderTokens: USE_PROVIDER_TOKENS,
       countStrategy: COUNT_STRATEGY,
       endTpsBehavior: END_TPS_BEHAVIOR,
-      showIcon: SHOW_ICON,
+      icon: DEFAULT_ICON,
       updateInterval: UPDATE_INTERVAL,
     };
   }

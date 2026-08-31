@@ -55,7 +55,7 @@ You can customize the display, speed thresholds and colors by adding a `tokenSpe
     "useProviderTokens": false,
     "countStrategy": "direct",
     "endTpsBehavior": "average",
-    "showIcon": true,
+    "icon": "⚡",
     "updateInterval": 0
   }
 }
@@ -82,7 +82,7 @@ Invalid configuration values are automatically corrected to their defaults. A wa
 | `useProviderTokens` | boolean                        | `false`     | Opt-in: use provider-reported count instead of the extension one |
 | `countStrategy`     | `estimate`, `direct`           | `direct`    | Token counting strategy used by the extension's own counter      |
 | `endTpsBehavior`    | `average`, `last`              | `average`   | What to show after streaming ends                                |
-| `showIcon`          | boolean                        | `true`      | Whether to show the icon in the status bar                       |
+| `icon`              | string                         | `"⚡"`      | Icon shown before TPS in the status bar                          |
 | `updateInterval`    | number                         | `0`         | Status bar update interval in ms (0 = every delta)               |
 
 ### Interactive Menu
@@ -93,7 +93,7 @@ A small interactive menu is available when running `/tps` in the editor, where y
 - **Use provider tokens** — use provider-reported counts instead of the extension's counter
 - **Count strategy** — how the extension counts tokens (`estimate` or `direct`)
 - **End-of-stream TPS** — what to show after streaming ends (`average` or `last`)
-- **Show icon** — toggle the lightning bolt icon (⚡) in the status bar
+- **Status icon** — choose the icon shown before TPS (`⚡`, `🔥`, `💨`, `🚀`, or none)
 - **Status update interval** — throttle status bar updates (see below)
 
 ### Sliding Window
@@ -192,14 +192,26 @@ The TPS calculation continues normally regardless of the update interval — onl
 | `stats` | `⚡ TPS: 25.0 tok/s (150 tok in 6.0s)` — TPS + token count and elapsed time |
 | `full`  | `⚡ TPS: 25.0 tok/s (150 tok in 6.0s · TTFT: 450 ms)` — everything          |
 
-> **Note:** Set `showIcon: false` to hide the `⚡` prefix, rendering just `TPS: 25.0 tok/s`.
+> **Note:** Set `icon: ""` to hide the icon prefix, rendering just `TPS: 25.0 tok/s`.
 
 ### Example: Minimal status bar
 
-With `showIcon: false` and `display: "tps"`, the status bar shows:
+With `icon: ""` and `display: "tps"`, the status bar shows:
 
 ```
 TPS: 25.0 tok/s
+```
+
+### Custom icons
+
+The `/tps` command offers `⚡`, `🔥`, `💨`, `🚀` and none. You can also set any custom icon directly in your `settings.json`:
+
+```json
+{
+  "tokenSpeed": {
+    "icon": "🎯"
+  }
+}
 ```
 
 ## Commands
@@ -210,7 +222,7 @@ TPS: 25.0 tok/s
 
 ## How It Works
 
-1. **Session Start** — Renders the initial status bar entry showing `⚡ TPS: --`
+1. **Session Start** — Renders the initial status bar entry showing the configured icon followed by `TPS: --`
 2. **Message Start** — When a user message starts, TTFT measurement begins
 3. **First Token & Streaming Start** — The moment the first content block starts (`text_start`, `thinking_start`, or `toolcall_start`), the TTFT is recorded and the streaming engine starts tracking
 4. **Token Update** — Each text/thinking delta is recorded. If `useProviderTokens` is `true` and the provider reports token counts, those are used directly; otherwise the extension's own counter (controlled by `countStrategy`) is used

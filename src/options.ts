@@ -39,12 +39,14 @@ export const TOGGLE_LABELS: Record<"on" | "off", string> = {
 };
 
 /**
- * Human-readable labels for showIcon toggle values.
+ * Available status bar icons for selection.
  */
-export const SHOW_ICON_LABELS: Record<"on" | "off", string> = {
-  on: "Show icon (⚡)",
-  off: "Hide icon",
-};
+export const ICONS: string[] = ["⚡", "🔥", "💨", "🚀"];
+
+/**
+ * Human-readable label for the icon setting.
+ */
+export const ICON_LABEL = "Status icon";
 
 /**
  * Labels for update interval preset values (in ms).

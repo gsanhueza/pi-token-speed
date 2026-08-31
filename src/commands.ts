@@ -12,7 +12,8 @@ import {
   COUNT_STRATEGY_LABELS,
   DISPLAY_LABELS,
   END_TPS_BEHAVIOR_LABELS,
-  SHOW_ICON_LABELS,
+  ICON_LABEL,
+  ICONS,
   TOGGLE_LABELS,
   UPDATE_INTERVAL_LABEL,
   UPDATE_INTERVAL_LABELS,
@@ -28,7 +29,7 @@ enum Options {
   USE_PROVIDER_TOKENS = "useProviderTokens",
   COUNT_STRATEGY = "countStrategy",
   END_TPS_BEHAVIOR = "endTpsBehavior",
-  SHOW_ICON = "showIcon",
+  ICON = "icon",
   UPDATE_INTERVAL = "updateInterval",
 }
 
@@ -84,8 +85,10 @@ export class CommandManager {
       await settings.setConfig({
         endTpsBehavior: newValue as EndTpsBehavior,
       });
-    } else if (id === Options.SHOW_ICON) {
-      await settings.setConfig({ showIcon: newValue === "on" });
+    } else if (id === Options.ICON) {
+      await settings.setConfig({
+        icon: newValue === "(empty)" ? "" : newValue,
+      });
     } else if (id === Options.UPDATE_INTERVAL) {
       await settings.setConfig({ updateInterval: Number(newValue) });
     }
@@ -157,11 +160,11 @@ export class CommandManager {
         values: Object.keys(END_TPS_BEHAVIOR_LABELS) as EndTpsBehavior[],
       },
       {
-        id: Options.SHOW_ICON,
-        label: "Show icon",
-        description: "Toggle the lightning bolt icon (⚡) in the status bar",
-        currentValue: config.showIcon ? "on" : "off",
-        values: Object.keys(SHOW_ICON_LABELS),
+        id: Options.ICON,
+        label: ICON_LABEL,
+        description: "Icon shown before TPS in the status bar",
+        currentValue: config.icon || "(empty)",
+        values: [...ICONS, "(empty)"],
       },
       {
         id: Options.UPDATE_INTERVAL,

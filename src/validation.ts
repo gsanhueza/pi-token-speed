@@ -19,6 +19,7 @@ import {
   TPS_THRESHOLD_FAST,
   TPS_THRESHOLD_MEDIUM,
   TPS_THRESHOLD_SLOW,
+  UPDATE_INTERVAL,
   USE_PROVIDER_TOKENS,
 } from "./defaults";
 import {
@@ -63,6 +64,10 @@ export class Validator {
       errors,
     );
     response.showIcon = this.checkShowIcon(config.showIcon, errors);
+    response.updateInterval = this.checkUpdateInterval(
+      config.updateInterval,
+      errors,
+    );
 
     // Error-only checks (no correction)
     const thresholdResult = this.isValidThresholdOrder(config);
@@ -273,5 +278,23 @@ export class Validator {
     );
 
     return SHOW_ICON;
+  }
+
+  /**
+   * Checks that updateInterval is a non-negative number (ms for status updates).
+   * Non-numbers default to 0 (update on every delta).
+   *
+   * @param value The updateInterval value to check.
+   * @param errors The shared errors array to push to if invalid.
+   * @returns The validated (or defaulted) updateInterval value.
+   */
+  private static checkUpdateInterval(value: unknown, errors: string[]): number {
+    if (typeof value === "number" && value >= 0) return value;
+
+    errors.push(
+      `- Invalid updateInterval "${value}" — defaulting to ${UPDATE_INTERVAL}.`,
+    );
+
+    return UPDATE_INTERVAL;
   }
 }

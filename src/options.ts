@@ -45,3 +45,19 @@ export const SHOW_ICON_LABELS: Record<"on" | "off", string> = {
   on: "Show icon (⚡)",
   off: "Hide icon",
 };
+
+/**
+ * Labels for update interval preset values (in ms).
+ */
+export const UPDATE_INTERVAL_LABELS: Record<string, string> = {
+  "0": "Every delta (default)",
+  "50": "50 ms",
+  "100": "100 ms",
+  "200": "200 ms",
+  "500": "500 ms",
+};
+
+/**
+ * Human-readable label for updateInterval setting.
+ */
+export const UPDATE_INTERVAL_LABEL = "Status update interval";

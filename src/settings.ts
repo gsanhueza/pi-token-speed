@@ -18,6 +18,7 @@ import {
   TPS_THRESHOLD_FAST,
   TPS_THRESHOLD_MEDIUM,
   TPS_THRESHOLD_SLOW,
+  UPDATE_INTERVAL,
   USE_PROVIDER_TOKENS,
 } from "./defaults";
 import { Validator } from "./validation";
@@ -67,6 +68,7 @@ export class Settings {
       countStrategy: COUNT_STRATEGY,
       endTpsBehavior: END_TPS_BEHAVIOR,
       showIcon: SHOW_ICON,
+      updateInterval: UPDATE_INTERVAL,
     };
   }
 

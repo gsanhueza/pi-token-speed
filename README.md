@@ -8,6 +8,7 @@ A [Pi Coding Agent](https://pi.dev/) extension that displays real-time **tokens-
 - **Time-to-first-token (TTFT)** — measures latency from user message to the first token being generated
 - **Configurable sliding window** — adjust the window size to suit your server speed (default: 1s)
 - **Color-coded speed indicators** — visual feedback based on performance thresholds
+- **Configurable update interval** — throttle status bar updates to reduce visual flickering
 - **Provider-reported counting** — opt in to using provider-reported counts (e.g. Anthropic, OpenAI) instead of the extension's own counter
 - **Fully configurable** — customize display, thresholds and colors via `~/.pi/agent/settings.json`
 
@@ -54,7 +55,8 @@ You can customize the display, speed thresholds and colors by adding a `tokenSpe
     "useProviderTokens": false,
     "countStrategy": "direct",
     "endTpsBehavior": "average",
-    "showIcon": true
+    "showIcon": true,
+    "updateInterval": 0
   }
 }
 ```
@@ -80,7 +82,8 @@ Invalid configuration values are automatically corrected to their defaults. A wa
 | `useProviderTokens` | boolean                        | `false`     | Opt-in: use provider-reported count instead of the extension one |
 | `countStrategy`     | `estimate`, `direct`           | `direct`    | Token counting strategy used by the extension's own counter      |
 | `endTpsBehavior`    | `average`, `last`              | `average`   | What to show after streaming ends                                |
-| `showIcon`          | boolean                        | `true`      | Whether to show the ⚡ icon in the status bar                    |
+| `showIcon`          | boolean                        | `true`      | Whether to show the icon in the status bar                       |
+| `updateInterval`    | number                         | `0`         | Status bar update interval in ms (0 = every delta)               |
 
 ### Interactive Menu
 
@@ -90,7 +93,8 @@ A small interactive menu is available when running `/tps` in the editor, where y
 - **Use provider tokens** — use provider-reported counts instead of the extension's counter
 - **Count strategy** — how the extension counts tokens (`estimate` or `direct`)
 - **End-of-stream TPS** — what to show after streaming ends (`average` or `last`)
-- **Show ⚡ icon** — toggle the lightning bolt icon in the status bar
+- **Show icon** — toggle the lightning bolt icon (⚡) in the status bar
+- **Status update interval** — throttle status bar updates (see below)
 
 ### Sliding Window
 
@@ -162,6 +166,22 @@ After streaming ends, the `endTpsBehavior` option controls what TPS value is dis
 | `last`              | Returns the last sliding window TPS measurement from the moment streaming stopped. Useful for seeing how fast the model was streaming at the end. |
 
 This is also configurable via the `/tps` interactive menu.
+
+### Status Update Interval
+
+By default, the status bar updates on every token delta. If you're experiencing visual flickering, you can configure the update interval in milliseconds via the `/tps` interactive menu (`0`, `50`, `100`, `200`, `500`).
+
+You can also set a custom value in `~/.pi/agent/settings.json`:
+
+```json
+{
+  "tokenSpeed": {
+    "updateInterval": 80
+  }
+}
+```
+
+The TPS calculation continues normally regardless of the update interval — only the status bar rendering is throttled.
 
 ## Display Modes
 

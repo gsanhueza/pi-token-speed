@@ -32,4 +32,5 @@ export interface TokenSpeedConfig {
   countStrategy: CountStrategy;
   endTpsBehavior: EndTpsBehavior;
   showIcon: boolean;
+  updateInterval: number; // ms, 0 = update on every delta
 }

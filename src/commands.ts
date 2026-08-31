@@ -14,6 +14,8 @@ import {
   END_TPS_BEHAVIOR_LABELS,
   SHOW_ICON_LABELS,
   TOGGLE_LABELS,
+  UPDATE_INTERVAL_LABEL,
+  UPDATE_INTERVAL_LABELS,
 } from "./options";
 import type { Renderer } from "./renderer";
 import { settings } from "./settings";
@@ -27,6 +29,7 @@ enum Options {
   COUNT_STRATEGY = "countStrategy",
   END_TPS_BEHAVIOR = "endTpsBehavior",
   SHOW_ICON = "showIcon",
+  UPDATE_INTERVAL = "updateInterval",
 }
 
 /**
@@ -83,6 +86,8 @@ export class CommandManager {
       });
     } else if (id === Options.SHOW_ICON) {
       await settings.setConfig({ showIcon: newValue === "on" });
+    } else if (id === Options.UPDATE_INTERVAL) {
+      await settings.setConfig({ updateInterval: Number(newValue) });
     }
 
     // Re-render with the latest config
@@ -157,6 +162,14 @@ export class CommandManager {
         description: "Toggle the lightning bolt icon (⚡) in the status bar",
         currentValue: config.showIcon ? "on" : "off",
         values: Object.keys(SHOW_ICON_LABELS),
+      },
+      {
+        id: Options.UPDATE_INTERVAL,
+        label: UPDATE_INTERVAL_LABEL,
+        description:
+          "How often to update the status bar. 0 = every delta (current behavior).",
+        currentValue: config.updateInterval?.toString() ?? "0",
+        values: Object.keys(UPDATE_INTERVAL_LABELS),
       },
     ];
   }

@@ -74,3 +74,9 @@ export const END_TPS_BEHAVIOR: EndTpsBehavior = "average";
  * Whether to show the ⚡ icon in the status bar.
  */
 export const SHOW_ICON = true;
+
+/**
+ * Status bar update interval in milliseconds.
+ * 0 = update on every delta (current behavior).
+ */
+export const UPDATE_INTERVAL: number = 0;

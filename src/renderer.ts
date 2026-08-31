@@ -9,10 +9,63 @@ import { Validator } from "./validation";
  * Renderer for the token-speed status bar.
  */
 export class Renderer {
+  private lastUpdateTime = 0;
+
   /**
    * Creates a new Renderer bound to an engine.
    */
   constructor(private readonly engine: TokenSpeedEngine) {}
+
+  /**
+   * Updates the status bar, throttled by the configured updateInterval.
+   * If updateInterval is undefined, updates happen immediately (current behavior).
+   *
+   * @param ctx The context used by Pi.
+   */
+  update(ctx: ExtensionContext): void {
+    const config = settings.getConfig();
+    const interval = config.updateInterval;
+
+    // If no interval set, update immediately (current behavior)
+    if (!interval) {
+      this.render(ctx);
+      return;
+    }
+
+    const now = Date.now();
+
+    if (now - this.lastUpdateTime >= interval) {
+      this.render(ctx);
+      this.lastUpdateTime = now;
+    }
+  }
+
+  /**
+   * Renders the status bar update without throttling.
+   *
+   * @param ctx The context used by Pi.
+   */
+  private render(ctx: ExtensionContext): void {
+    const config = settings.getConfig();
+    const theme = ctx.ui.theme;
+
+    // Render TPS first
+    const { tps } = this.engine;
+    const value = tps?.toFixed(1);
+    const measurement = value ? `${value} tok/s` : "--";
+
+    const color = this.getColor(config, tps);
+    const displayValue = this.colorHex(measurement, color);
+
+    // Build the suffix based on display mode
+    const suffix = this.buildSuffix(config.display);
+
+    const icon = config.showIcon ? "⚡ " : "";
+    const prefix = theme.fg("dim", `${icon}TPS:`);
+    const text = `${prefix} ${displayValue}${suffix}`;
+
+    ctx.ui.setStatus(STATUS_KEY, text);
+  }
 
   /**
    * Applies a custom hex color using 24-bit truecolor ANSI escape codes.
@@ -97,29 +150,9 @@ export class Renderer {
   }
 
   /**
-   * Updates the status bar with the given context.
-   *
-   * @param ctx The context used by Pi.
+   * Resets the last update time (called on session start).
    */
-  update(ctx: ExtensionContext): void {
-    const config = settings.getConfig();
-    const theme = ctx.ui.theme;
-
-    // Render TPS first
-    const { tps } = this.engine;
-    const value = tps?.toFixed(1);
-    const measurement = value ? `${value} tok/s` : "--";
-
-    const color = this.getColor(config, tps);
-    const displayValue = this.colorHex(measurement, color);
-
-    // Build the suffix based on display mode
-    const suffix = this.buildSuffix(config.display);
-
-    const icon = config.showIcon ? "⚡ " : "";
-    const prefix = theme.fg("dim", `${icon}TPS:`);
-    const text = `${prefix} ${displayValue}${suffix}`;
-
-    ctx.ui.setStatus(STATUS_KEY, text);
+  resetThrottle(): void {
+    this.lastUpdateTime = 0;
   }
 }

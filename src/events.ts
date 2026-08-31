@@ -49,6 +49,7 @@ export class EventManager {
 
     this.engine.initialize();
     this.renderer.initialize(ctx);
+    this.renderer.resetThrottle();
   }
 
   /**

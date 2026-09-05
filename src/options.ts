@@ -9,7 +9,7 @@ import type {
  */
 export const DISPLAY_LABELS: Record<DisplayMode, string> = {
   tps: "TPS speed",
-  ttft: "TTFT only",
+  ttft: "Time-to-first-token",
   stats: "Token stats",
   full: "Full details",
 };
@@ -18,7 +18,7 @@ export const DISPLAY_LABELS: Record<DisplayMode, string> = {
  * Human-readable labels for count strategy values.
  */
 export const COUNT_STRATEGY_LABELS: Record<CountStrategy, string> = {
-  estimate: "Estimate (fast)",
+  estimate: "Estimate (calculated)",
   direct: "Direct (accurate)",
 };
 

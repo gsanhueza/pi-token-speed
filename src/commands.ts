@@ -1,12 +1,7 @@
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { getSettingsListTheme } from "@earendil-works/pi-coding-agent";
 import { SettingsList, type SettingItem } from "@earendil-works/pi-tui";
-import type {
-  CountStrategy,
-  DisplayMode,
-  EndTpsBehavior,
-  TokenSpeedConfig,
-} from "./config-types";
+import type { TokenSpeedConfig } from "./config-types";
 import { TokenSpeedEngine } from "./engine";
 import {
   COUNT_STRATEGY_LABELS,
@@ -47,7 +42,7 @@ export class CommandManager {
 
   /**
    * Handles the `/tps` command — opens a SettingsList to configure
-   * display mode, token counting, timing, sliding window, and icon.
+   * display mode, token counting, timing, icon, and sliding window.
    *
    * @param ctx The context used by Pi
    */
@@ -77,25 +72,39 @@ export class CommandManager {
     ctx: ExtensionCommandContext,
   ): Promise<void> {
     if (id === Options.DISPLAY) {
-      await settings.setConfig({ display: newValue as DisplayMode });
+      await settings.setConfig({
+        display: CommandManager.invertLabels(DISPLAY_LABELS)[newValue],
+      });
     } else if (id === Options.USE_PROVIDER_TOKENS) {
-      await settings.setConfig({ useProviderTokens: newValue === "on" });
+      await settings.setConfig({ useProviderTokens: newValue === "On" });
     } else if (id === Options.COUNT_STRATEGY) {
       await settings.setConfig({
-        countStrategy: newValue as CountStrategy,
+        countStrategy: CommandManager.invertLabels(COUNT_STRATEGY_LABELS)[
+          newValue
+        ],
       });
     } else if (id === Options.END_TPS_BEHAVIOR) {
       await settings.setConfig({
-        endTpsBehavior: newValue as EndTpsBehavior,
+        endTpsBehavior: CommandManager.invertLabels(END_TPS_BEHAVIOR_LABELS)[
+          newValue
+        ],
       });
     } else if (id === Options.ICON) {
       await settings.setConfig({
         icon: newValue === "(empty)" ? "" : newValue,
       });
     } else if (id === Options.UPDATE_INTERVAL) {
-      await settings.setConfig({ updateInterval: Number(newValue) });
+      await settings.setConfig({
+        updateInterval: Number(
+          CommandManager.invertLabels(UPDATE_INTERVAL_LABELS)[newValue],
+        ),
+      });
     } else if (id === Options.SLIDING_WINDOW) {
-      await settings.setConfig({ slidingWindow: Number(newValue) });
+      await settings.setConfig({
+        slidingWindow: Number(
+          CommandManager.invertLabels(SLIDING_WINDOW_LABELS)[newValue],
+        ),
+      });
     }
 
     // Re-render with the latest config
@@ -137,40 +146,34 @@ export class CommandManager {
         id: Options.DISPLAY,
         label: "Display mode",
         description: "Level of detail to show in the status bar",
-        currentValue: config.display,
-        values: Object.keys(DISPLAY_LABELS) as DisplayMode[],
+        currentValue: DISPLAY_LABELS[config.display],
+        values: Object.values(DISPLAY_LABELS),
       },
       {
         id: Options.USE_PROVIDER_TOKENS,
         label: "Use provider tokens",
         description:
           "Use the provider's token count instead of this extension's counter",
-        currentValue: config.useProviderTokens ? "on" : "off",
-        values: Object.keys(TOGGLE_LABELS),
+        currentValue: config.useProviderTokens
+          ? TOGGLE_LABELS.on
+          : TOGGLE_LABELS.off,
+        values: Object.values(TOGGLE_LABELS),
       },
       {
         id: Options.COUNT_STRATEGY,
         label: "Count strategy",
         description:
           "Direct counting (server streams tokens) vs estimate counting (server streams chunks)",
-        currentValue: config.countStrategy,
-        values: Object.keys(COUNT_STRATEGY_LABELS) as CountStrategy[],
+        currentValue: COUNT_STRATEGY_LABELS[config.countStrategy],
+        values: Object.values(COUNT_STRATEGY_LABELS),
       },
       {
         id: Options.END_TPS_BEHAVIOR,
         label: "End-of-stream TPS",
         description:
           "What to show after streaming: overall average or last sliding window value",
-        currentValue: config.endTpsBehavior,
-        values: Object.keys(END_TPS_BEHAVIOR_LABELS) as EndTpsBehavior[],
-      },
-      {
-        id: Options.SLIDING_WINDOW,
-        label: SLIDING_WINDOW_LABEL,
-        description:
-          "Time window for TPS calculation. Larger = smoother, smaller = more reactive.",
-        currentValue: config.slidingWindow?.toString() ?? "1000",
-        values: Object.keys(SLIDING_WINDOW_LABELS),
+        currentValue: END_TPS_BEHAVIOR_LABELS[config.endTpsBehavior],
+        values: Object.values(END_TPS_BEHAVIOR_LABELS),
       },
       {
         id: Options.ICON,
@@ -180,13 +183,35 @@ export class CommandManager {
         values: [...ICONS, "(empty)"],
       },
       {
+        id: Options.SLIDING_WINDOW,
+        label: SLIDING_WINDOW_LABEL,
+        description:
+          "Time window for TPS calculation. Larger = smoother, smaller = more reactive.",
+        currentValue:
+          SLIDING_WINDOW_LABELS[config.slidingWindow.toString()] ??
+          config.slidingWindow.toString(),
+        values: Object.values(SLIDING_WINDOW_LABELS),
+      },
+      {
         id: Options.UPDATE_INTERVAL,
         label: UPDATE_INTERVAL_LABEL,
         description:
           "How often to update the status bar. 0 = every delta (current behavior).",
-        currentValue: config.updateInterval?.toString() ?? "0",
-        values: Object.keys(UPDATE_INTERVAL_LABELS),
+        currentValue:
+          UPDATE_INTERVAL_LABELS[config.updateInterval.toString()] ??
+          config.updateInterval.toString(),
+        values: Object.values(UPDATE_INTERVAL_LABELS),
       },
     ];
+  }
+
+  private static invertLabels<K extends string>(
+    obj: Record<K, string>,
+  ): Record<string, K> {
+    const result = {} as Record<string, K>;
+    for (const key in obj) {
+      result[obj[key]] = key;
+    }
+    return result;
   }
 }

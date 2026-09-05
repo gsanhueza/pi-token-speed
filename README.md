@@ -54,8 +54,8 @@ You can customize the display, speed thresholds and colors by adding a `tokenSpe
     "useProviderTokens": false,
     "countStrategy": "direct",
     "endTpsBehavior": "average",
-    "slidingWindow": 1000,
     "icon": "⚡",
+    "slidingWindow": 1000,
     "updateInterval": 0
   }
 }
@@ -93,8 +93,8 @@ A small interactive menu is available when running `/tps` in the editor, where y
 - **Use provider tokens** — use provider-reported counts instead of the extension's counter
 - **Count strategy** — how the extension counts tokens (`estimate` or `direct`)
 - **End-of-stream TPS** — what to show after streaming ends (`average` or `last`)
-- **Sliding window** — time window for TPS calculation (see [Sliding Window](#sliding-window))
 - **Status icon** — choose the icon shown before TPS (`⚡`, `🔥`, `💨`, `🚀`, or none)
+- **Sliding window** — time window for TPS calculation (see [Sliding Window](#sliding-window))
 - **Status update interval** — throttle status bar updates (see [Status Update Interval](#status-update-interval))
 
 ### Sliding Window

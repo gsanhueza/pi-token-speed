@@ -14,6 +14,8 @@ import {
   END_TPS_BEHAVIOR_LABELS,
   ICON_LABEL,
   ICONS,
+  SLIDING_WINDOW_LABEL,
+  SLIDING_WINDOW_LABELS,
   TOGGLE_LABELS,
   UPDATE_INTERVAL_LABEL,
   UPDATE_INTERVAL_LABELS,
@@ -31,6 +33,7 @@ enum Options {
   END_TPS_BEHAVIOR = "endTpsBehavior",
   ICON = "icon",
   UPDATE_INTERVAL = "updateInterval",
+  SLIDING_WINDOW = "slidingWindow",
 }
 
 /**
@@ -44,7 +47,7 @@ export class CommandManager {
 
   /**
    * Handles the `/tps` command — opens a SettingsList to configure
-   * display mode, token counting strategy, and provider token usage.
+   * display mode, token counting, timing, sliding window, and icon.
    *
    * @param ctx The context used by Pi
    */
@@ -91,6 +94,8 @@ export class CommandManager {
       });
     } else if (id === Options.UPDATE_INTERVAL) {
       await settings.setConfig({ updateInterval: Number(newValue) });
+    } else if (id === Options.SLIDING_WINDOW) {
+      await settings.setConfig({ slidingWindow: Number(newValue) });
     }
 
     // Re-render with the latest config
@@ -158,6 +163,14 @@ export class CommandManager {
           "What to show after streaming: overall average or last sliding window value",
         currentValue: config.endTpsBehavior,
         values: Object.keys(END_TPS_BEHAVIOR_LABELS) as EndTpsBehavior[],
+      },
+      {
+        id: Options.SLIDING_WINDOW,
+        label: SLIDING_WINDOW_LABEL,
+        description:
+          "Time window for TPS calculation. Larger = smoother, smaller = more reactive.",
+        currentValue: config.slidingWindow?.toString() ?? "1000",
+        values: Object.keys(SLIDING_WINDOW_LABELS),
       },
       {
         id: Options.ICON,

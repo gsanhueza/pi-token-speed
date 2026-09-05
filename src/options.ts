@@ -63,3 +63,21 @@ export const UPDATE_INTERVAL_LABELS: Record<string, string> = {
  * Human-readable label for updateInterval setting.
  */
 export const UPDATE_INTERVAL_LABEL = "Status update interval";
+
+/**
+ * Labels for sliding window preset values (in ms).
+ */
+export const SLIDING_WINDOW_LABELS: Record<string, string> = {
+  "500": "500 ms (fast/reactive)",
+  "1000": "1000 ms (default)",
+  "3000": "3000 ms (medium)",
+  "5000": "5000 ms (slow)",
+  "10000": "10000 ms (very slow)",
+  "15000": "15000 ms (extreme)",
+  "30000": "30000 ms (max)",
+};
+
+/**
+ * Human-readable label for slidingWindow setting.
+ */
+export const SLIDING_WINDOW_LABEL = "Sliding window";

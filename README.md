@@ -50,11 +50,11 @@ You can customize the display, speed thresholds and colors by adding a `tokenSpe
     "colorMedium": "#ffaa00",
     "colorFast": "#00ff88",
     "colorBlazing": "#44ddff",
-    "slidingWindow": 1000,
     "display": "tps",
     "useProviderTokens": false,
     "countStrategy": "direct",
     "endTpsBehavior": "average",
+    "slidingWindow": 1000,
     "icon": "⚡",
     "updateInterval": 0
   }
@@ -78,7 +78,7 @@ Invalid configuration values are automatically corrected to their defaults. A wa
 | `colorFast`         | string                         | `"#00ff88"` | Color for fast tier                                              |
 | `colorBlazing`      | string                         | `"#44ddff"` | Color for blazing tier                                           |
 | `slidingWindow`     | number                         | `1000`      | Sliding window duration in ms                                    |
-| `display`           | `tps`, `ttft`, `stats`, `full` | `tps`       | Display mode (see below)                                         |
+| `display`           | `tps`, `ttft`, `stats`, `full` | `tps`       | Display mode (see [Display Modes](#display-modes))               |
 | `useProviderTokens` | boolean                        | `false`     | Opt-in: use provider-reported count instead of the extension one |
 | `countStrategy`     | `estimate`, `direct`           | `direct`    | Token counting strategy used by the extension's own counter      |
 | `endTpsBehavior`    | `average`, `last`              | `average`   | What to show after streaming ends                                |
@@ -93,8 +93,9 @@ A small interactive menu is available when running `/tps` in the editor, where y
 - **Use provider tokens** — use provider-reported counts instead of the extension's counter
 - **Count strategy** — how the extension counts tokens (`estimate` or `direct`)
 - **End-of-stream TPS** — what to show after streaming ends (`average` or `last`)
+- **Sliding window** — time window for TPS calculation (see [Sliding Window](#sliding-window))
 - **Status icon** — choose the icon shown before TPS (`⚡`, `🔥`, `💨`, `🚀`, or none)
-- **Status update interval** — throttle status bar updates (see below)
+- **Status update interval** — throttle status bar updates (see [Status Update Interval](#status-update-interval))
 
 ### Sliding Window
 
@@ -216,9 +217,9 @@ The `/tps` command offers `⚡`, `🔥`, `💨`, `🚀` and none. You can also s
 
 ## Commands
 
-| Command | Description                                                                               |
-| ------- | ----------------------------------------------------------------------------------------- |
-| `/tps`  | Open settings menu — configure options described in [Interactive Menu](#interactive-menu) |
+| Command | Description                                                                                   |
+| ------- | --------------------------------------------------------------------------------------------- |
+| `/tps`  | Open settings menu to configure available options (see [Interactive Menu](#interactive-menu)) |
 
 ## How It Works
 

@@ -251,19 +251,40 @@ export class CommandManager {
    * Builds the SettingsList items for the token speed settings menu.
    *
    * @param config The resolved configuration
-   * @param ctx The command context (for the colors submenu)
+   * @param ctx The command context
    * @returns The array of SettingItem objects
    */
   private buildSettingsItems(
     config: TokenSpeedConfig,
     ctx: ExtensionCommandContext,
   ): SettingItem[] {
+    const {
+      display,
+      useProviderTokens,
+      countStrategy,
+      endTpsBehavior,
+      icon,
+      slidingWindow,
+      updateInterval,
+      colorSlow,
+      colorMedium,
+      colorFast,
+      colorBlazing,
+      tpsSlow,
+      tpsMedium,
+      tpsFast,
+      tpsBlazing,
+    } = config;
+
+    const colorsDisplay = `${coloredBlock(colorSlow)} ${coloredBlock(colorMedium)} ${coloredBlock(colorFast)} ${coloredBlock(colorBlazing)}`;
+    const thresholdsDisplay = `${tpsSlow} | ${tpsMedium} | ${tpsFast} | ${tpsBlazing}`;
+
     return [
       {
         id: Options.DISPLAY,
         label: "Display mode",
         description: "Level of detail to show in the status bar",
-        currentValue: DISPLAY_LABELS[config.display],
+        currentValue: DISPLAY_LABELS[display],
         values: Object.values(DISPLAY_LABELS),
       },
       {
@@ -271,9 +292,7 @@ export class CommandManager {
         label: "Use provider tokens",
         description:
           "Use the provider's token count instead of this extension's counter",
-        currentValue: config.useProviderTokens
-          ? TOGGLE_LABELS.on
-          : TOGGLE_LABELS.off,
+        currentValue: useProviderTokens ? TOGGLE_LABELS.on : TOGGLE_LABELS.off,
         values: Object.values(TOGGLE_LABELS),
       },
       {
@@ -281,7 +300,7 @@ export class CommandManager {
         label: "Count strategy",
         description:
           "Direct counting (server streams tokens) vs estimate counting (server streams chunks)",
-        currentValue: COUNT_STRATEGY_LABELS[config.countStrategy],
+        currentValue: COUNT_STRATEGY_LABELS[countStrategy],
         values: Object.values(COUNT_STRATEGY_LABELS),
       },
       {
@@ -289,14 +308,14 @@ export class CommandManager {
         label: "End-of-stream TPS",
         description:
           "What to show after streaming: overall average or last sliding window value",
-        currentValue: END_TPS_BEHAVIOR_LABELS[config.endTpsBehavior],
+        currentValue: END_TPS_BEHAVIOR_LABELS[endTpsBehavior],
         values: Object.values(END_TPS_BEHAVIOR_LABELS),
       },
       {
         id: Options.ICON,
         label: ICON_LABEL,
         description: "Icon shown before TPS in the status bar",
-        currentValue: config.icon || "(empty)",
+        currentValue: icon || "(empty)",
         values: [...ICONS, "(empty)"],
       },
       {
@@ -305,8 +324,8 @@ export class CommandManager {
         description:
           "Time window for TPS calculation. Larger = smoother, smaller = more reactive.",
         currentValue:
-          SLIDING_WINDOW_LABELS[config.slidingWindow.toString()] ??
-          config.slidingWindow.toString(),
+          SLIDING_WINDOW_LABELS[slidingWindow.toString()] ??
+          slidingWindow.toString(),
         values: Object.values(SLIDING_WINDOW_LABELS),
       },
       {
@@ -315,15 +334,15 @@ export class CommandManager {
         description:
           "How often to update the status bar. 0 = every delta (current behavior).",
         currentValue:
-          UPDATE_INTERVAL_LABELS[config.updateInterval.toString()] ??
-          config.updateInterval.toString(),
+          UPDATE_INTERVAL_LABELS[updateInterval.toString()] ??
+          updateInterval.toString(),
         values: Object.values(UPDATE_INTERVAL_LABELS),
       },
       {
         id: Options.COLORS,
         label: "Colors",
         description: "Customize tier colors (slow, medium, fast, blazing)",
-        currentValue: `${coloredBlock(config.colorSlow)} ${coloredBlock(config.colorMedium)} ${coloredBlock(config.colorFast)} ${coloredBlock(config.colorBlazing)}`,
+        currentValue: colorsDisplay,
         submenu: (_currentValue: string, done: (value?: string) => void) => {
           const items = buildColorSettingsItems(ctx);
           this.colorSubmenuItems = items;
@@ -343,7 +362,7 @@ export class CommandManager {
         id: Options.THRESHOLDS,
         label: "Thresholds",
         description: "Customize TPS thresholds (slow, medium, fast, blazing)",
-        currentValue: `${config.tpsSlow} | ${config.tpsMedium} | ${config.tpsFast} | ${config.tpsBlazing}`,
+        currentValue: thresholdsDisplay,
         submenu: (_currentValue: string, done: (value?: string) => void) => {
           const items = buildThresholdSettingsItems(ctx);
           this.thresholdSubmenuItems = items;

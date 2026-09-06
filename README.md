@@ -90,14 +90,14 @@ Invalid configuration values are automatically corrected to their defaults. A wa
 A small interactive menu is available when running `/tps` in the editor, where you can adjust:
 
 - **Display mode** — what to show in the status bar
+- **Status icon** — choose the icon shown before TPS (`⚡`, `🔥`, `💨`, `🚀`, or none)
+- **Status update interval** — throttle status bar updates (see [Status Update Interval](#status-update-interval))
 - **Use provider tokens** — use provider-reported counts instead of the extension's counter
 - **Count strategy** — how the extension counts tokens (`estimate` or `direct`)
-- **End-of-stream TPS** — what to show after streaming ends (`average` or `last`)
-- **Status icon** — choose the icon shown before TPS (`⚡`, `🔥`, `💨`, `🚀`, or none)
 - **Sliding window** — time window for TPS calculation (see [Sliding Window](#sliding-window))
-- **Status update interval** — throttle status bar updates (see [Status Update Interval](#status-update-interval))
-- **Colors** — customize the hex color for each TPS tier (see [Color Customization](#color-customization))
+- **End-of-stream TPS** — what to show after streaming ends (`average` or `last`)
 - **Thresholds** — customize the TPS threshold values for each tier (see [Threshold Customization](#threshold-customization))
+- **Colors** — customize the hex color for each TPS tier (see [Color Customization](#color-customization))
 
 ### Sliding Window
 

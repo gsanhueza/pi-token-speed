@@ -280,6 +280,7 @@ export class CommandManager {
     const thresholdsDisplay = `${tpsSlow} | ${tpsMedium} | ${tpsFast} | ${tpsBlazing}`;
 
     return [
+      // Display-related settings
       {
         id: Options.DISPLAY,
         label: "Display mode",
@@ -287,6 +288,24 @@ export class CommandManager {
         currentValue: DISPLAY_LABELS[display],
         values: Object.values(DISPLAY_LABELS),
       },
+      {
+        id: Options.ICON,
+        label: ICON_LABEL,
+        description: "Icon shown before TPS in the status bar",
+        currentValue: icon || "(empty)",
+        values: [...ICONS, "(empty)"],
+      },
+      {
+        id: Options.UPDATE_INTERVAL,
+        label: UPDATE_INTERVAL_LABEL,
+        description:
+          "How often to update the status bar. 0 = every delta (current behavior).",
+        currentValue:
+          UPDATE_INTERVAL_LABELS[updateInterval.toString()] ??
+          updateInterval.toString(),
+        values: Object.values(UPDATE_INTERVAL_LABELS),
+      },
+      // Token counting settings
       {
         id: Options.USE_PROVIDER_TOKENS,
         label: "Use provider tokens",
@@ -303,21 +322,7 @@ export class CommandManager {
         currentValue: COUNT_STRATEGY_LABELS[countStrategy],
         values: Object.values(COUNT_STRATEGY_LABELS),
       },
-      {
-        id: Options.END_TPS_BEHAVIOR,
-        label: "End-of-stream TPS",
-        description:
-          "What to show after streaming: overall average or last sliding window value",
-        currentValue: END_TPS_BEHAVIOR_LABELS[endTpsBehavior],
-        values: Object.values(END_TPS_BEHAVIOR_LABELS),
-      },
-      {
-        id: Options.ICON,
-        label: ICON_LABEL,
-        description: "Icon shown before TPS in the status bar",
-        currentValue: icon || "(empty)",
-        values: [...ICONS, "(empty)"],
-      },
+      // TPS calculation settings
       {
         id: Options.SLIDING_WINDOW,
         label: SLIDING_WINDOW_LABEL,
@@ -329,14 +334,33 @@ export class CommandManager {
         values: Object.values(SLIDING_WINDOW_LABELS),
       },
       {
-        id: Options.UPDATE_INTERVAL,
-        label: UPDATE_INTERVAL_LABEL,
+        id: Options.END_TPS_BEHAVIOR,
+        label: "End-of-stream TPS",
         description:
-          "How often to update the status bar. 0 = every delta (current behavior).",
-        currentValue:
-          UPDATE_INTERVAL_LABELS[updateInterval.toString()] ??
-          updateInterval.toString(),
-        values: Object.values(UPDATE_INTERVAL_LABELS),
+          "What to show after streaming: overall average or last sliding window value",
+        currentValue: END_TPS_BEHAVIOR_LABELS[endTpsBehavior],
+        values: Object.values(END_TPS_BEHAVIOR_LABELS),
+      },
+      // Tier customization
+      {
+        id: Options.THRESHOLDS,
+        label: "Thresholds",
+        description: "Customize TPS thresholds (slow, medium, fast, blazing)",
+        currentValue: thresholdsDisplay,
+        submenu: (_currentValue: string, done: (value?: string) => void) => {
+          const items = buildThresholdSettingsItems(ctx);
+          this.thresholdSubmenuItems = items;
+          this.thresholdSubmenuList = new SettingsList(
+            items,
+            Math.min(items.length + 2, 15),
+            getSettingsListTheme(),
+            (id, newValue) => {
+              this.handleSettingChange(id, newValue, ctx);
+            },
+            () => done(undefined),
+          );
+          return this.thresholdSubmenuList;
+        },
       },
       {
         id: Options.COLORS,
@@ -356,26 +380,6 @@ export class CommandManager {
             () => done(undefined),
           );
           return this.colorSubmenuList;
-        },
-      },
-      {
-        id: Options.THRESHOLDS,
-        label: "Thresholds",
-        description: "Customize TPS thresholds (slow, medium, fast, blazing)",
-        currentValue: thresholdsDisplay,
-        submenu: (_currentValue: string, done: (value?: string) => void) => {
-          const items = buildThresholdSettingsItems(ctx);
-          this.thresholdSubmenuItems = items;
-          this.thresholdSubmenuList = new SettingsList(
-            items,
-            Math.min(items.length + 2, 15),
-            getSettingsListTheme(),
-            (id, newValue) => {
-              this.handleSettingChange(id, newValue, ctx);
-            },
-            () => done(undefined),
-          );
-          return this.thresholdSubmenuList;
         },
       },
     ];

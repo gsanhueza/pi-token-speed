@@ -1,6 +1,7 @@
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { getSettingsListTheme } from "@earendil-works/pi-coding-agent";
 import { SettingsList, type SettingItem } from "@earendil-works/pi-tui";
+import { buildColorSettingsItems, coloredBlock } from "./color-picker";
 import type { TokenSpeedConfig } from "./config-types";
 import { TokenSpeedEngine } from "./engine";
 import {
@@ -29,12 +30,17 @@ enum Options {
   ICON = "icon",
   UPDATE_INTERVAL = "updateInterval",
   SLIDING_WINDOW = "slidingWindow",
+  COLORS = "colors",
 }
 
 /**
  * Handles commands for the token-speed extension.
  */
 export class CommandManager {
+  private settingsList: SettingsList | null = null;
+  private colorSubmenuList: SettingsList | null = null;
+  private colorSubmenuItems: SettingItem[] | null = null;
+
   constructor(
     private readonly renderer: Renderer,
     private readonly engine: TokenSpeedEngine,
@@ -42,21 +48,22 @@ export class CommandManager {
 
   /**
    * Handles the `/tps` command — opens a SettingsList to configure
-   * display mode, token counting, timing, icon, and sliding window.
+   * display mode, token counting, timing, icon, sliding window, and colors.
    *
    * @param ctx The context used by Pi
    */
   async runTps(ctx: ExtensionCommandContext): Promise<void> {
     const config = settings.getConfig();
-    const items = this.buildSettingsItems(config);
+    const items = this.buildSettingsItems(config, ctx);
 
-    await ctx.ui.custom<void>((_tui, _theme, _kb, done) =>
-      this.createSettingsList(
+    await ctx.ui.custom<void>((_tui, _theme, _kb, done) => {
+      this.settingsList = this.createSettingsList(
         items,
         async (id, newValue) => this.handleSettingChange(id, newValue, ctx),
         done,
-      ),
-    );
+      );
+      return this.settingsList;
+    });
   }
 
   /**
@@ -105,6 +112,18 @@ export class CommandManager {
           CommandManager.invertLabels(SLIDING_WINDOW_LABELS)[newValue],
         ),
       });
+    } else if (
+      id === "colorSlow" ||
+      id === "colorMedium" ||
+      id === "colorFast" ||
+      id === "colorBlazing"
+    ) {
+      // Color keys are saved by the color picker's input.onSubmit,
+      // but we still need to merge into the cache here so the main
+      // menu's SettingsList items reflect the new values after the
+      // submenu closes.
+      await settings.setConfig({ [id]: newValue });
+      this.refreshColorItems();
     }
 
     // Re-render with the latest config
@@ -135,12 +154,55 @@ export class CommandManager {
   }
 
   /**
+   * Refreshes the SettingsList items after a color change.
+   * Updates both the main menu's Colors entry and the
+   * submenu's color rows so colored blocks reflect
+   * the new values immediately.
+   */
+  private refreshColorItems(): void {
+    const config = settings.getConfig();
+    const slow = `${coloredBlock(config.colorSlow)}`;
+    const medium = `${coloredBlock(config.colorMedium)}`;
+    const fast = `${coloredBlock(config.colorFast)}`;
+    const blazing = `${coloredBlock(config.colorBlazing)}`;
+    const allColors = `${slow} ${medium} ${fast} ${blazing}`;
+
+    // Update main menu's Colors entry
+    if (this.settingsList) {
+      this.settingsList.updateValue("colors", allColors);
+    }
+
+    // Update submenu's color rows:
+    // - label gets the colored block + tier name
+    // - currentValue stays as the hex string
+    if (this.colorSubmenuItems) {
+      const colorMap: Record<string, { block: string; tier: string }> = {
+        colorSlow: { block: slow, tier: "Slow" },
+        colorMedium: { block: medium, tier: "Medium" },
+        colorFast: { block: fast, tier: "Fast" },
+        colorBlazing: { block: blazing, tier: "Blazing" },
+      };
+
+      for (const [id, { block, tier }] of Object.entries(colorMap)) {
+        const item = this.colorSubmenuItems.find((i) => i.id === id);
+        if (item) {
+          item.label = `${block} ${tier}`;
+        }
+      }
+    }
+  }
+
+  /**
    * Builds the SettingsList items for the token speed settings menu.
    *
    * @param config The resolved configuration
+   * @param ctx The command context (for the colors submenu)
    * @returns The array of SettingItem objects
    */
-  private buildSettingsItems(config: TokenSpeedConfig): SettingItem[] {
+  private buildSettingsItems(
+    config: TokenSpeedConfig,
+    ctx: ExtensionCommandContext,
+  ): SettingItem[] {
     return [
       {
         id: Options.DISPLAY,
@@ -201,6 +263,26 @@ export class CommandManager {
           UPDATE_INTERVAL_LABELS[config.updateInterval.toString()] ??
           config.updateInterval.toString(),
         values: Object.values(UPDATE_INTERVAL_LABELS),
+      },
+      {
+        id: Options.COLORS,
+        label: "Colors",
+        description: "Customize tier colors (slow, medium, fast, blazing)",
+        currentValue: `${coloredBlock(config.colorSlow)} ${coloredBlock(config.colorMedium)} ${coloredBlock(config.colorFast)} ${coloredBlock(config.colorBlazing)}`,
+        submenu: (_currentValue: string, done: (value?: string) => void) => {
+          const items = buildColorSettingsItems(ctx);
+          this.colorSubmenuItems = items;
+          this.colorSubmenuList = new SettingsList(
+            items,
+            Math.min(items.length + 2, 15),
+            getSettingsListTheme(),
+            (id, newValue) => {
+              this.handleSettingChange(id, newValue, ctx);
+            },
+            () => done(undefined),
+          );
+          return this.colorSubmenuList;
+        },
       },
     ];
   }

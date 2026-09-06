@@ -96,6 +96,7 @@ A small interactive menu is available when running `/tps` in the editor, where y
 - **Status icon** — choose the icon shown before TPS (`⚡`, `🔥`, `💨`, `🚀`, or none)
 - **Sliding window** — time window for TPS calculation (see [Sliding Window](#sliding-window))
 - **Status update interval** — throttle status bar updates (see [Status Update Interval](#status-update-interval))
+- **Colors** — customize the hex color for each TPS tier (see [Color Customization](#color-customization))
 
 ### Sliding Window
 
@@ -167,6 +168,23 @@ After streaming ends, the `endTpsBehavior` option controls what TPS value is dis
 | `last`              | Returns the last sliding window TPS measurement from the moment streaming stopped. Useful for seeing how fast the model was streaming at the end. |
 
 This is also configurable via the `/tps` interactive menu.
+
+### Color Customization
+
+The four TPS tier colors can be customized via the `/tps` interactive menu by selecting **Colors**. Each tier opens a hex color input where you can enter a custom `#RRGGBB` value.
+
+Alternatively, you can set colors directly in `~/.pi/agent/settings.json`:
+
+```json
+{
+  "tokenSpeed": {
+    "colorSlow": "#cc3333",
+    "colorMedium": "#cc8800",
+    "colorFast": "#00cc66",
+    "colorBlazing": "#33bbdd"
+  }
+}
+```
 
 ### Status Update Interval
 

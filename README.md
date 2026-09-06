@@ -97,6 +97,7 @@ A small interactive menu is available when running `/tps` in the editor, where y
 - **Sliding window** — time window for TPS calculation (see [Sliding Window](#sliding-window))
 - **Status update interval** — throttle status bar updates (see [Status Update Interval](#status-update-interval))
 - **Colors** — customize the hex color for each TPS tier (see [Color Customization](#color-customization))
+- **Thresholds** — customize the TPS threshold values for each tier (see [Threshold Customization](#threshold-customization))
 
 ### Sliding Window
 
@@ -182,6 +183,23 @@ Alternatively, you can set colors directly in `~/.pi/agent/settings.json`:
     "colorMedium": "#cc8800",
     "colorFast": "#00cc66",
     "colorBlazing": "#33bbdd"
+  }
+}
+```
+
+### Threshold Customization
+
+The four TPS tier thresholds can be customized via the `/tps` interactive menu by selecting **Thresholds**. Each tier opens a numeric input where you can enter a non-negative integer value. Thresholds must be in strict ascending order (`tpsSlow < tpsMedium < tpsFast < tpsBlazing`); invalid values are rejected with a warning.
+
+Alternatively, you can set thresholds directly in `~/.pi/agent/settings.json`:
+
+```json
+{
+  "tokenSpeed": {
+    "tpsSlow": 0,
+    "tpsMedium": 20,
+    "tpsFast": 40,
+    "tpsBlazing": 60
   }
 }
 ```

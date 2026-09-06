@@ -106,7 +106,7 @@ export class Validator {
    * @param config The configuration to validate
    * @returns An object with validity status and optional error messages
    */
-  private static isValidThresholdOrder(config: TokenSpeedConfig): {
+  static isValidThresholdOrder(config: TokenSpeedConfig): {
     valid: boolean;
     errors?: string[];
   } {

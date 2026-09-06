@@ -18,6 +18,8 @@ import {
 } from "./options";
 import type { Renderer } from "./renderer";
 import { settings } from "./settings";
+import { buildThresholdSettingsItems } from "./threshold-picker";
+import { Validator } from "./validation";
 
 /**
  * Configuration options
@@ -31,6 +33,7 @@ enum Options {
   UPDATE_INTERVAL = "updateInterval",
   SLIDING_WINDOW = "slidingWindow",
   COLORS = "colors",
+  THRESHOLDS = "thresholds",
 }
 
 /**
@@ -40,6 +43,8 @@ export class CommandManager {
   private settingsList: SettingsList | null = null;
   private colorSubmenuList: SettingsList | null = null;
   private colorSubmenuItems: SettingItem[] | null = null;
+  private thresholdSubmenuList: SettingsList | null = null;
+  private thresholdSubmenuItems: SettingItem[] | null = null;
 
   constructor(
     private readonly renderer: Renderer,
@@ -124,6 +129,23 @@ export class CommandManager {
       // submenu closes.
       await settings.setConfig({ [id]: newValue });
       this.refreshColorItems();
+    } else if (
+      id === "tpsSlow" ||
+      id === "tpsMedium" ||
+      id === "tpsFast" ||
+      id === "tpsBlazing"
+    ) {
+      const updatedConfig = {
+        ...settings.getConfig(),
+        [id]: Number(newValue),
+      };
+      const result = Validator.isValidThresholdOrder(updatedConfig);
+      if (!result.valid) {
+        ctx.ui.notify(result.errors!.join("\n"), "warning");
+        return;
+      }
+      await settings.setConfig({ [id]: Number(newValue) });
+      this.refreshThresholdItems();
     }
 
     // Re-render with the latest config
@@ -151,6 +173,39 @@ export class CommandManager {
       onChange,
       onClose,
     );
+  }
+
+  /**
+   * Refreshes the SettingsList items after a threshold change.
+   * Updates both the main menu's Thresholds entry and the
+   * submenu's threshold rows so currentValue reflects
+   * the new values immediately.
+   */
+  private refreshThresholdItems(): void {
+    const config = settings.getConfig();
+    const allThresholds = `${config.tpsSlow} | ${config.tpsMedium} | ${config.tpsFast} | ${config.tpsBlazing}`;
+
+    // Update main menu's Thresholds entry
+    if (this.settingsList) {
+      this.settingsList.updateValue("thresholds", allThresholds);
+    }
+
+    // Update submenu's threshold rows
+    if (this.thresholdSubmenuItems) {
+      const thresholdMap: Record<string, string> = {
+        tpsSlow: config.tpsSlow.toString(),
+        tpsMedium: config.tpsMedium.toString(),
+        tpsFast: config.tpsFast.toString(),
+        tpsBlazing: config.tpsBlazing.toString(),
+      };
+
+      for (const [id, value] of Object.entries(thresholdMap)) {
+        const item = this.thresholdSubmenuItems.find((i) => i.id === id);
+        if (item) {
+          item.currentValue = value;
+        }
+      }
+    }
   }
 
   /**
@@ -284,9 +339,36 @@ export class CommandManager {
           return this.colorSubmenuList;
         },
       },
+      {
+        id: Options.THRESHOLDS,
+        label: "Thresholds",
+        description: "Customize TPS thresholds (slow, medium, fast, blazing)",
+        currentValue: `${config.tpsSlow} | ${config.tpsMedium} | ${config.tpsFast} | ${config.tpsBlazing}`,
+        submenu: (_currentValue: string, done: (value?: string) => void) => {
+          const items = buildThresholdSettingsItems(ctx);
+          this.thresholdSubmenuItems = items;
+          this.thresholdSubmenuList = new SettingsList(
+            items,
+            Math.min(items.length + 2, 15),
+            getSettingsListTheme(),
+            (id, newValue) => {
+              this.handleSettingChange(id, newValue, ctx);
+            },
+            () => done(undefined),
+          );
+          return this.thresholdSubmenuList;
+        },
+      },
     ];
   }
 
+  /**
+   * Inverts a label map, swapping keys and values.
+   *
+   * E.g., `{ tps: "TPS speed" }` → `{ "TPS speed": "tps" }`.
+   * Used to convert the user-facing label back to the config value
+   * when a setting is changed via the SettingsList.
+   */
   private static invertLabels<K extends string>(
     obj: Record<K, string>,
   ): Record<string, K> {

@@ -1,7 +1,7 @@
-import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
-import type { Component, SettingItem } from "@earendil-works/pi-tui";
-import { Input } from "@earendil-works/pi-tui";
+import type { Theme } from "@earendil-works/pi-coding-agent";
+import type { SettingItem, TUI } from "@earendil-works/pi-tui";
 import type { Colors, TierName } from "./config-types";
+import { InputDialog } from "./dialog";
 import { settings } from "./settings";
 import { Validator } from "./validation";
 
@@ -35,45 +35,35 @@ export function coloredBlock(hex: string): string {
 /**
  * Builds the SettingsList items for the color customization submenu.
  *
- * Each row opens an Input component for hex editing on Enter.
+ * Each row opens a framed `InputDialog` for hex editing on Enter.
  *
- * @param ctx The command context (for notifications).
+ * @param theme The active theme (for dialog styling)
+ * @param tui The TUI instance (for re-renders while the dialog is open)
  * @returns Array of SettingItem for the color submenu.
  */
 export const buildColorSettingsItems = (
-  ctx: ExtensionCommandContext,
+  theme: Theme,
+  tui: TUI,
 ): SettingItem[] => {
   const config = settings.getConfig();
 
   return COLOR_TIERS.map((tier) => ({
     id: `colors.${tier.key as keyof Colors}`,
     label: `${coloredBlock(config.colors[tier.key])} ${tier.label}`,
-    description: `Hex color for the ${tier.label.toLowerCase()} TPS tier`,
+    description: `Hex color for the ${tier.label.toLowerCase()} tier`,
     currentValue: config.colors[tier.key],
-    submenu: (
-      _currentValue: string,
-      done: (value?: string) => void,
-    ): Component => {
-      const input = new Input();
-      // Read the config value fresh each time the submenu opens
-      // so that previously saved colors are reflected immediately
-      input.setValue(settings.getConfig().colors[tier.key]);
-
-      input.onSubmit = (value: string) => {
-        if (Validator.isValidHex(value)) {
-          done(value);
-        } else {
-          ctx.ui.notify(
-            `Invalid hex color "${value}" — must be #RRGGBB`,
-            "warning",
-          );
-          // Don't call done — keep the input open for correction
-        }
-      };
-
-      input.onEscape = () => done(undefined);
-
-      return input;
-    },
+    // Read the config value fresh each time the submenu opens
+    // so that previously saved colors are reflected immediately
+    submenu: InputDialog.inputSubmenu(
+      theme,
+      tui,
+      `${tier.label} color`,
+      `Hex color for the ${tier.label.toLowerCase()} tier`,
+      "#RRGGBB",
+      settings.getConfig().colors[tier.key],
+      // Normalize on commit: hex is stored lower-cased regardless of
+      // how the user typed it (isValidHex accepts both cases).
+      (raw) => (Validator.isValidHex(raw) ? raw.toLowerCase() : null),
+    ),
   }));
 };

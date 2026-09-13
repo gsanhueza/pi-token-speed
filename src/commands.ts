@@ -1,6 +1,13 @@
-import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
+import type {
+  ExtensionCommandContext,
+  Theme,
+} from "@earendil-works/pi-coding-agent";
 import { getSettingsListTheme } from "@earendil-works/pi-coding-agent";
-import { SettingsList, type SettingItem } from "@earendil-works/pi-tui";
+import {
+  SettingsList,
+  type SettingItem,
+  type TUI,
+} from "@earendil-works/pi-tui";
 import { buildColorSettingsItems, coloredBlock } from "./color-picker";
 import type { TierName, TokenSpeedConfig } from "./config-types";
 import { TokenSpeedEngine } from "./engine";
@@ -59,9 +66,12 @@ export class CommandManager {
    */
   async runTps(ctx: ExtensionCommandContext): Promise<void> {
     const config = settings.getConfig();
-    const items = this.buildSettingsItems(config, ctx);
 
-    await ctx.ui.custom<void>((_tui, _theme, _kb, done) => {
+    await ctx.ui.custom<void>((tui, theme, _kb, done) => {
+      // Items are built inside the callback so the `theme`/`tui` needed by
+      // the framed InputDialog submenus are available; `SettingsList` invokes
+      // the submenu factories lazily while this custom UI is active.
+      const items = this.buildSettingsItems(config, ctx, theme, tui);
       this.settingsList = this.createSettingsList(
         items,
         async (id, newValue) => this.handleSettingChange(id, newValue, ctx),
@@ -250,11 +260,15 @@ export class CommandManager {
    *
    * @param config The resolved configuration
    * @param ctx The command context
+   * @param theme The active theme (for dialog styling)
+   * @param tui The TUI instance (for dialog re-renders)
    * @returns The array of SettingItem objects
    */
   private buildSettingsItems(
     config: TokenSpeedConfig,
     ctx: ExtensionCommandContext,
+    theme: Theme,
+    tui: TUI,
   ): SettingItem[] {
     const {
       display,
@@ -340,7 +354,7 @@ export class CommandManager {
         description: "Customize TPS thresholds (slow, medium, fast, blazing)",
         currentValue: thresholdsDisplay,
         submenu: (_currentValue: string, done: (value?: string) => void) => {
-          const items = buildThresholdSettingsItems(ctx);
+          const items = buildThresholdSettingsItems(theme, tui);
           this.thresholdSubmenuItems = items;
           this.thresholdSubmenuList = new SettingsList(
             items,
@@ -360,7 +374,7 @@ export class CommandManager {
         description: "Customize tier colors (slow, medium, fast, blazing)",
         currentValue: colorsDisplay,
         submenu: (_currentValue: string, done: (value?: string) => void) => {
-          const items = buildColorSettingsItems(ctx);
+          const items = buildColorSettingsItems(theme, tui);
           this.colorSubmenuItems = items;
           this.colorSubmenuList = new SettingsList(
             items,

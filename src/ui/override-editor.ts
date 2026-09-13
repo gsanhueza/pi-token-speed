@@ -539,11 +539,16 @@ const createBlockList = (
   }
 
   function applyNextBlock(nextBlock: ProviderOverride) {
-    const next: ProviderOverrides = { ...options.overrides };
-    // An empty block is equivalent to no block (every field falls back
-    // to base): drop the entry so the map never accumulates empty objects
-    if (Object.keys(nextBlock).length === 0) delete next[providerId];
-    else next[providerId] = nextBlock;
+    // Keep the entry even when the block becomes empty: every key in the
+    // map was created explicitly by the user (via `a` here or a manual
+    // settings-file edit), so resetting all of a provider's fields to
+    // base must not make the provider disappear from the editor — an
+    // empty block and an absent block are equivalent at read time, but
+    // the entry itself is the user's "track this provider" marker.
+    const next: ProviderOverrides = {
+      ...options.overrides,
+      [providerId]: nextBlock,
+    };
     void (async () => {
       const ok = await persistNext(options, next);
       if (!ok) return;
@@ -816,6 +821,7 @@ export class OverridesEditor implements Component, Focusable {
     this.openConfirmDialog(
       "Delete provider override",
       `Delete overrides for "${id}"?`,
+      "Delete",
       () => {
         void this.deleteSelected();
       },
@@ -824,16 +830,29 @@ export class OverridesEditor implements Component, Focusable {
 
   /**
    * Opens the confirmation dialog for resetting all of a provider's
-   * overrides back to base (`r` on a provider row). Removing the block
-   * is exactly the reset: an absent block means every field falls back
-   * to base, so this reuses the delete path.
+   * overrides back to base (`r` on a provider row). Reset empties the
+   * block (every field falls back to base) but keeps the provider
+   * entry, since it was created explicitly — only `d` deletes the key.
    */
   private beginReset(providerId: string): void {
     this.openConfirmDialog(
       "Reset provider overrides",
       `Reset all overrides for "${providerId}" to base?`,
+      "Reset",
       () => {
-        void this.deleteSelected();
+        void (async () => {
+          const next: ProviderOverrides = {
+            ...this.options.overrides,
+            [providerId]: {},
+          };
+          const ok = await persistNext(this.options, next);
+          this.mode = "list";
+          if (ok) {
+            // The row count is unchanged; just refresh its summary
+            this.rebuildList(this.selectedIndex);
+          }
+          this.options.tui.requestRender();
+        })();
       },
     );
   }
@@ -842,6 +861,7 @@ export class OverridesEditor implements Component, Focusable {
   private openConfirmDialog(
     title: string,
     message: string,
+    confirmLabel: string,
     onConfirm: () => void,
   ): void {
     const { theme, tui } = this.options;
@@ -851,6 +871,7 @@ export class OverridesEditor implements Component, Focusable {
       tui,
       title,
       message,
+      confirmLabel,
       onConfirm: () => {
         this.confirmDialog = undefined;
         onConfirm();

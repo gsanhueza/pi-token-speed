@@ -1,25 +1,22 @@
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import type { SettingItem } from "@earendil-works/pi-tui";
 import { Input } from "@earendil-works/pi-tui";
-import type { TokenSpeedConfig } from "./config-types";
+import type { TierName } from "./config-types";
 import { settings } from "./settings";
 
 /**
  * Threshold tier metadata.
  */
 interface ThresholdTier {
-  key: keyof Pick<
-    TokenSpeedConfig,
-    "tpsSlow" | "tpsMedium" | "tpsFast" | "tpsBlazing"
-  >;
+  key: TierName;
   label: string;
 }
 
 const THRESHOLD_TIERS: ThresholdTier[] = [
-  { key: "tpsSlow", label: "Slow" },
-  { key: "tpsMedium", label: "Medium" },
-  { key: "tpsFast", label: "Fast" },
-  { key: "tpsBlazing", label: "Blazing" },
+  { key: "slow", label: "Slow" },
+  { key: "medium", label: "Medium" },
+  { key: "fast", label: "Fast" },
+  { key: "blazing", label: "Blazing" },
 ];
 
 /**
@@ -36,15 +33,15 @@ export const buildThresholdSettingsItems = (
   const config = settings.getConfig();
 
   return THRESHOLD_TIERS.map((tier) => ({
-    id: tier.key,
+    id: `thresholds.${tier.key}`,
     label: `${tier.label}`,
     description: `TPS threshold for the ${tier.label.toLowerCase()} tier`,
-    currentValue: config[tier.key].toString(),
+    currentValue: config.thresholds[tier.key].toString(),
     submenu: (_currentValue: string, done: (value?: string) => void) => {
       const input = new Input();
       // Read the config value fresh each time the submenu opens
-      // so that previously saved colors are reflected immediately
-      input.setValue(settings.getConfig()[tier.key].toString());
+      // so that previously saved thresholds are reflected immediately
+      input.setValue(settings.getConfig().thresholds[tier.key].toString());
 
       input.onSubmit = (value: string) => {
         const num = Number(value);

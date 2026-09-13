@@ -94,10 +94,10 @@ export class Renderer {
   private getColor(config: TokenSpeedConfig, tps: number | null): string {
     if (tps == null) return "";
 
-    if (tps >= config.tpsBlazing) return config.colorBlazing;
-    if (tps >= config.tpsFast) return config.colorFast;
-    if (tps >= config.tpsMedium) return config.colorMedium;
-    if (tps >= config.tpsSlow) return config.colorSlow;
+    if (tps >= config.thresholds.blazing) return config.colors.blazing;
+    if (tps >= config.thresholds.fast) return config.colors.fast;
+    if (tps >= config.thresholds.medium) return config.colors.medium;
+    if (tps >= config.thresholds.slow) return config.colors.slow;
 
     return "";
   }

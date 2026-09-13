@@ -2,7 +2,7 @@ import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { getSettingsListTheme } from "@earendil-works/pi-coding-agent";
 import { SettingsList, type SettingItem } from "@earendil-works/pi-tui";
 import { buildColorSettingsItems, coloredBlock } from "./color-picker";
-import type { TokenSpeedConfig } from "./config-types";
+import type { TierName, TokenSpeedConfig } from "./config-types";
 import { TokenSpeedEngine } from "./engine";
 import {
   COUNT_STRATEGY_LABELS,
@@ -117,34 +117,30 @@ export class CommandManager {
           CommandManager.invertLabels(SLIDING_WINDOW_LABELS)[newValue],
         ),
       });
-    } else if (
-      id === "colorSlow" ||
-      id === "colorMedium" ||
-      id === "colorFast" ||
-      id === "colorBlazing"
-    ) {
-      // Color keys are saved by the color picker's input.onSubmit,
-      // but we still need to merge into the cache here so the main
-      // menu's SettingsList items reflect the new values after the
-      // submenu closes.
-      await settings.setConfig({ [id]: newValue });
+    } else if (id.startsWith("colors.")) {
+      // Ids are namespaced as "colors.<tier>"; only the changed tier is
+      // written so the file accumulates just the user's explicit choices.
+      const tier = id.slice("colors.".length) as TierName;
+      await settings.setConfig({ colors: { [tier]: newValue } });
       this.refreshColorItems();
-    } else if (
-      id === "tpsSlow" ||
-      id === "tpsMedium" ||
-      id === "tpsFast" ||
-      id === "tpsBlazing"
-    ) {
-      const updatedConfig = {
-        ...settings.getConfig(),
-        [id]: Number(newValue),
+    } else if (id.startsWith("thresholds.")) {
+      // Ids are namespaced as "thresholds.<tier>"
+      const tier = id.slice("thresholds.".length) as TierName;
+      // Validate against the fully merged group…
+      const merged = {
+        ...settings.getConfig().thresholds,
+        [tier]: Number(newValue),
       };
-      const result = Validator.isValidThresholdOrder(updatedConfig);
+      const result = Validator.isValidThresholdOrder({
+        ...settings.getConfig(),
+        thresholds: merged,
+      });
       if (!result.valid) {
         ctx.ui.notify(result.errors!.join("\n"), "warning");
         return;
       }
-      await settings.setConfig({ [id]: Number(newValue) });
+      // …but persist only the changed tier
+      await settings.setConfig({ thresholds: { [tier]: Number(newValue) } });
       this.refreshThresholdItems();
     }
 
@@ -183,7 +179,8 @@ export class CommandManager {
    */
   private refreshThresholdItems(): void {
     const config = settings.getConfig();
-    const allThresholds = `${config.tpsSlow} | ${config.tpsMedium} | ${config.tpsFast} | ${config.tpsBlazing}`;
+    const { thresholds } = config;
+    const allThresholds = `${thresholds.slow} | ${thresholds.medium} | ${thresholds.fast} | ${thresholds.blazing}`;
 
     // Update main menu's Thresholds entry
     if (this.settingsList) {
@@ -193,10 +190,10 @@ export class CommandManager {
     // Update submenu's threshold rows
     if (this.thresholdSubmenuItems) {
       const thresholdMap: Record<string, string> = {
-        tpsSlow: config.tpsSlow.toString(),
-        tpsMedium: config.tpsMedium.toString(),
-        tpsFast: config.tpsFast.toString(),
-        tpsBlazing: config.tpsBlazing.toString(),
+        "thresholds.slow": thresholds.slow.toString(),
+        "thresholds.medium": thresholds.medium.toString(),
+        "thresholds.fast": thresholds.fast.toString(),
+        "thresholds.blazing": thresholds.blazing.toString(),
       };
 
       for (const [id, value] of Object.entries(thresholdMap)) {
@@ -216,10 +213,11 @@ export class CommandManager {
    */
   private refreshColorItems(): void {
     const config = settings.getConfig();
-    const slow = `${coloredBlock(config.colorSlow)}`;
-    const medium = `${coloredBlock(config.colorMedium)}`;
-    const fast = `${coloredBlock(config.colorFast)}`;
-    const blazing = `${coloredBlock(config.colorBlazing)}`;
+    const { colors } = config;
+    const slow = `${coloredBlock(colors.slow)}`;
+    const medium = `${coloredBlock(colors.medium)}`;
+    const fast = `${coloredBlock(colors.fast)}`;
+    const blazing = `${coloredBlock(colors.blazing)}`;
     const allColors = `${slow} ${medium} ${fast} ${blazing}`;
 
     // Update main menu's Colors entry
@@ -232,10 +230,10 @@ export class CommandManager {
     // - currentValue stays as the hex string
     if (this.colorSubmenuItems) {
       const colorMap: Record<string, { block: string; tier: string }> = {
-        colorSlow: { block: slow, tier: "Slow" },
-        colorMedium: { block: medium, tier: "Medium" },
-        colorFast: { block: fast, tier: "Fast" },
-        colorBlazing: { block: blazing, tier: "Blazing" },
+        "colors.slow": { block: slow, tier: "Slow" },
+        "colors.medium": { block: medium, tier: "Medium" },
+        "colors.fast": { block: fast, tier: "Fast" },
+        "colors.blazing": { block: blazing, tier: "Blazing" },
       };
 
       for (const [id, { block, tier }] of Object.entries(colorMap)) {
@@ -266,18 +264,12 @@ export class CommandManager {
       icon,
       slidingWindow,
       updateInterval,
-      colorSlow,
-      colorMedium,
-      colorFast,
-      colorBlazing,
-      tpsSlow,
-      tpsMedium,
-      tpsFast,
-      tpsBlazing,
+      colors,
+      thresholds,
     } = config;
 
-    const colorsDisplay = `${coloredBlock(colorSlow)} ${coloredBlock(colorMedium)} ${coloredBlock(colorFast)} ${coloredBlock(colorBlazing)}`;
-    const thresholdsDisplay = `${tpsSlow} | ${tpsMedium} | ${tpsFast} | ${tpsBlazing}`;
+    const colorsDisplay = `${coloredBlock(colors.slow)} ${coloredBlock(colors.medium)} ${coloredBlock(colors.fast)} ${coloredBlock(colors.blazing)}`;
+    const thresholdsDisplay = `${thresholds.slow} | ${thresholds.medium} | ${thresholds.fast} | ${thresholds.blazing}`;
 
     return [
       // Display-related settings

@@ -2,7 +2,12 @@ import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import type { TokenSpeedConfig } from "./config-types";
+import type {
+  Colors,
+  Thresholds,
+  TierName,
+  TokenSpeedConfig,
+} from "./config-types";
 import { STATUS_KEY } from "./constants";
 import {
   COLOR_BLAZING,
@@ -24,12 +29,56 @@ import {
 import { Validator } from "./validation";
 
 /**
+ * Partial config where the nested groups may also be partially specified.
+ * Used for merging user settings over defaults without wiping sibling tiers.
+ */
+type PartialConfig = Partial<
+  Omit<TokenSpeedConfig, "thresholds" | "colors">
+> & {
+  thresholds?: Partial<Thresholds>;
+  colors?: Partial<Colors>;
+};
+
+/**
+ * Legacy flat threshold keys → tier name (e.g. `tpsSlow` → `slow`).
+ */
+const LEGACY_THRESHOLD_KEYS: Record<string, TierName> = {
+  tpsSlow: "slow",
+  tpsMedium: "medium",
+  tpsFast: "fast",
+  tpsBlazing: "blazing",
+};
+
+/**
+ * Legacy flat color keys → tier name (e.g. `colorFast` → `fast`).
+ */
+const LEGACY_COLOR_KEYS: Record<string, TierName> = {
+  colorSlow: "slow",
+  colorMedium: "medium",
+  colorFast: "fast",
+  colorBlazing: "blazing",
+};
+
+const ALL_LEGACY_KEYS = [
+  ...Object.keys(LEGACY_THRESHOLD_KEYS),
+  ...Object.keys(LEGACY_COLOR_KEYS),
+];
+
+/**
  * Manages TokenSpeed configuration: defaults, user settings, caching,
  * and persistence to ~/.pi/agent/settings.json.
  *
  * Delegates validation to the `Validator` utility class.
  *
  * Use the exported `settings` singleton — do not instantiate directly.
+ *
+ * Settings shape:
+ * - Thresholds and colors are stored as nested objects
+ *   (`thresholds.slow`, `colors.fast`, …), all keys optional.
+ * - Legacy flat keys (`tpsSlow`, `colorFast`, …) are still readable for
+ *   backward compatibility, but the file is never rewritten at read time.
+ *   They are stripped from the file on the next write, which only happens
+ *   when the user stores a value via the `/tps` menu (auto-migration).
  *
  * Token counting behavior:
  * - Text/thinking deltas: Counted as 1 token (direct) or estimated from content (estimate)
@@ -39,6 +88,7 @@ import { Validator } from "./validation";
 export class Settings {
   private cachedConfig: TokenSpeedConfig | null = null;
   private cachedErrors: string[] = [];
+  private legacyKeys: string[] = [];
 
   /**
    * @internal Use the exported `settings` singleton instead.
@@ -54,14 +104,18 @@ export class Settings {
    */
   getDefaultConfig(): TokenSpeedConfig {
     return {
-      tpsSlow: TPS_THRESHOLD_SLOW,
-      tpsMedium: TPS_THRESHOLD_MEDIUM,
-      tpsFast: TPS_THRESHOLD_FAST,
-      tpsBlazing: TPS_THRESHOLD_BLAZING,
-      colorSlow: COLOR_SLOW,
-      colorMedium: COLOR_MEDIUM,
-      colorFast: COLOR_FAST,
-      colorBlazing: COLOR_BLAZING,
+      thresholds: {
+        slow: TPS_THRESHOLD_SLOW,
+        medium: TPS_THRESHOLD_MEDIUM,
+        fast: TPS_THRESHOLD_FAST,
+        blazing: TPS_THRESHOLD_BLAZING,
+      },
+      colors: {
+        slow: COLOR_SLOW,
+        medium: COLOR_MEDIUM,
+        fast: COLOR_FAST,
+        blazing: COLOR_BLAZING,
+      },
       slidingWindow: SLIDING_WINDOW,
       display: DISPLAY_MODE,
       useProviderTokens: USE_PROVIDER_TOKENS,
@@ -77,9 +131,24 @@ export class Settings {
    */
   async initialize(): Promise<TokenSpeedConfig> {
     const defaults = this.getDefaultConfig();
-    const userSettings = await this.readUserSettings();
+    const raw = await this.readUserSettings();
 
-    const merged = { ...defaults, ...userSettings };
+    // Detect and convert legacy keys in memory only — the file is
+    // untouched until the next write (which only happens via /tps).
+    this.legacyKeys = ALL_LEGACY_KEYS.filter((key) => raw[key] !== undefined);
+    const converted = this.convertLegacyKeys(raw);
+
+    // Keep the non-legacy, non-nested-group keys as-is; the nested groups
+    // are re-added sanitized (legacy values converted, new keys winning).
+    const rest: Record<string, unknown> = { ...raw };
+    for (const key of ["thresholds", "colors", ...ALL_LEGACY_KEYS]) {
+      delete rest[key];
+    }
+
+    const merged = Settings.mergeConfig(
+      { ...defaults, ...rest } as PartialConfig,
+      converted,
+    );
     const { config, errors } = Validator.validate(merged);
     this.cachedConfig = config;
     this.cachedErrors = errors;
@@ -103,12 +172,90 @@ export class Settings {
   }
 
   /**
-   * Writes a partial TokenSpeedConfig and updates the cache.
+   * Returns the legacy keys found in the settings file during the last
+   * initialization. Empty once the file has been rewritten without them.
    */
-  async setConfig(partial: Partial<TokenSpeedConfig>): Promise<void> {
+  getLegacyKeys(): string[] {
+    return this.legacyKeys;
+  }
+
+  /**
+   * Writes a partial TokenSpeedConfig and updates the cache.
+   * Legacy keys are stripped from the stored block, migrating the file
+   * to the nested format.
+   */
+  async setConfig(partial: PartialConfig): Promise<void> {
     await this.writeUserSettings(partial);
     const current = this.cachedConfig || this.getDefaultConfig();
-    this.cachedConfig = { ...current, ...partial };
+    this.cachedConfig = Settings.mergeConfig(current, partial);
+    this.legacyKeys = [];
+  }
+
+  /**
+   * Shallow-merges two partial configs, merging the nested `thresholds`
+   * and `colors` groups per-tier so partials never wipe sibling tiers.
+   */
+  private static mergeConfig(
+    base: PartialConfig,
+    partial: PartialConfig,
+  ): TokenSpeedConfig {
+    // The cast is safe: base is always the full defaults or the cached
+    // config, so the merged result is complete at runtime.
+    return {
+      ...base,
+      ...partial,
+      thresholds: { ...base.thresholds, ...partial.thresholds },
+      colors: { ...base.colors, ...partial.colors },
+    } as TokenSpeedConfig;
+  }
+
+  /**
+   * Converts legacy flat keys (`tpsSlow`, `colorFast`, …) into nested
+   * `thresholds`/`colors` partials. New-format keys take precedence over
+   * coexisting legacy keys for the same tier.
+   */
+  private convertLegacyKeys(block: Record<string, unknown>): {
+    thresholds?: Partial<Thresholds>;
+    colors?: Partial<Colors>;
+  } {
+    const thresholds: Partial<Thresholds> = {};
+    const colors: Partial<Colors> = {};
+
+    for (const [key, tier] of Object.entries(LEGACY_THRESHOLD_KEYS)) {
+      const value = block[key];
+      if (typeof value === "number") thresholds[tier] = value;
+    }
+    for (const [key, tier] of Object.entries(LEGACY_COLOR_KEYS)) {
+      const value = block[key];
+      if (typeof value === "string") colors[tier] = value;
+    }
+
+    const nestedThresholds = this.readNestedGroup<Thresholds>(
+      block,
+      "thresholds",
+    );
+    const nestedColors = this.readNestedGroup<Colors>(block, "colors");
+
+    return {
+      // Nested (new-format) keys win over converted legacy values
+      thresholds: { ...thresholds, ...nestedThresholds },
+      colors: { ...colors, ...nestedColors },
+    };
+  }
+
+  /**
+   * Safely reads a nested object group (e.g. `thresholds`, `colors`,
+   * `tokenSpeed`) from a raw block.
+   */
+  private readNestedGroup<T extends object>(
+    block: Record<string, unknown>,
+    group: string,
+  ): Partial<T> {
+    const value = block[group];
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      return {};
+    }
+    return value as Partial<T>;
   }
 
   /**
@@ -131,29 +278,66 @@ export class Settings {
   }
 
   /**
-   * Reads ~/.pi/agent/settings.json and extracts the "tokenSpeed" settings block.
+   * Reads ~/.pi/agent/settings.json and extracts the raw "tokenSpeed" block.
    *
-   * @returns The TokenSpeed settings object.
+   * @returns The raw TokenSpeed settings object.
    */
-  private async readUserSettings(): Promise<TokenSpeedConfig> {
+  private async readUserSettings(): Promise<Record<string, unknown>> {
     const settings = await this.readSettings();
-    return (settings[STATUS_KEY] || {}) as TokenSpeedConfig;
+    return this.readNestedGroup<Record<string, unknown>>(settings, STATUS_KEY);
   }
 
   /**
    * Writes a partial TokenSpeedConfig to ~/.pi/agent/settings.json,
-   * merging it with existing values.
+   * merging it with existing values and stripping every legacy key
+   * (auto-migration to the nested format).
+   *
+   * Only explicitly-set values are persisted: the partial should contain
+   * just the keys/tiers the user changed (nested groups are merged per-tier),
+   * plus converted legacy keys during migration. Defaults are never written
+   * unless the user explicitly sets them.
    *
    * @param partial The partial TokenSpeedConfig to write.
    */
-  private async writeUserSettings(
-    partial: Partial<TokenSpeedConfig>,
-  ): Promise<void> {
+  private async writeUserSettings(partial: PartialConfig): Promise<void> {
     const settings = await this.readSettings();
-    const current = (settings[STATUS_KEY] as Record<string, unknown>) || {};
-    settings[STATUS_KEY] = { ...current, ...partial };
+    const raw =
+      this.readNestedGroup<Record<string, unknown>>(settings, STATUS_KEY) || {};
 
+    // Convert any legacy keys on disk into the nested format (new keys
+    // winning), so stripping them below never loses stored values.
+    const converted = this.convertLegacyKeys(raw);
+    const rest: Record<string, unknown> = { ...raw };
+    for (const key of ["thresholds", "colors", ...ALL_LEGACY_KEYS]) {
+      delete rest[key];
+    }
+
+    // Only explicitly-set values are persisted: the nested groups come from
+    // converted legacy keys (explicit in a previous format) merged per-tier
+    // with whatever the partial contains (the tiers the user just changed
+    // via /tps). Values equal to their defaults are still written if the
+    // user sets them explicitly.
+    const block = Settings.mergeConfig(rest, {
+      ...partial,
+      thresholds: { ...converted.thresholds, ...partial.thresholds },
+      colors: { ...converted.colors, ...partial.colors },
+    }) as unknown as Record<string, unknown>;
+
+    // Omit empty groups
+    if (Object.keys(block.thresholds ?? {}).length === 0) {
+      delete block.thresholds;
+    }
+    if (Object.keys(block.colors ?? {}).length === 0) {
+      delete block.colors;
+    }
+
+    if (Object.keys(block).length > 0) {
+      settings[STATUS_KEY] = block;
+    } else {
+      delete settings[STATUS_KEY];
+    }
     await this.writeSettings(settings);
+    this.legacyKeys = [];
   }
 }
 

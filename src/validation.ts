@@ -81,7 +81,7 @@ export class Validator {
         "- Colors must be valid 24-bit truecolor ANSI hex strings (e.g., '#00ff88').",
       );
       errors.push(
-        `  Found: ${config.colorSlow} | ${config.colorMedium} | ${config.colorFast} | ${config.colorBlazing}.`,
+        `  Found: ${config.colors.slow} | ${config.colors.medium} | ${config.colors.fast} | ${config.colors.blazing}.`,
       );
       errors.push(...colorResult.errors!);
     }
@@ -101,7 +101,7 @@ export class Validator {
 
   /**
    * Validates that TPS thresholds are in strict ascending order:
-   * tpsSlow < tpsMedium < tpsFast < tpsBlazing.
+   * slow < medium < fast < blazing.
    *
    * @param config The configuration to validate
    * @returns An object with validity status and optional error messages
@@ -111,20 +111,19 @@ export class Validator {
     errors?: string[];
   } {
     const {
-      tpsSlow = TPS_THRESHOLD_SLOW,
-      tpsMedium = TPS_THRESHOLD_MEDIUM,
-      tpsFast = TPS_THRESHOLD_FAST,
-      tpsBlazing = TPS_THRESHOLD_BLAZING,
-    } = config;
-    const valid =
-      tpsSlow < tpsMedium && tpsMedium < tpsFast && tpsFast < tpsBlazing;
+      slow = TPS_THRESHOLD_SLOW,
+      medium = TPS_THRESHOLD_MEDIUM,
+      fast = TPS_THRESHOLD_FAST,
+      blazing = TPS_THRESHOLD_BLAZING,
+    } = config.thresholds;
+    const valid = slow < medium && medium < fast && fast < blazing;
     return {
       valid,
       errors: valid
         ? undefined
         : [
             "- TPS thresholds must be in ascending order.",
-            `  Found: ${tpsSlow} < ${tpsMedium} < ${tpsFast} < ${tpsBlazing}.`,
+            `  Found: ${slow} < ${medium} < ${fast} < ${blazing}.`,
           ],
     };
   }
@@ -140,20 +139,20 @@ export class Validator {
     errors?: string[];
   } {
     const {
-      colorSlow = COLOR_SLOW,
-      colorMedium = COLOR_MEDIUM,
-      colorFast = COLOR_FAST,
-      colorBlazing = COLOR_BLAZING,
-    } = config;
+      slow = COLOR_SLOW,
+      medium = COLOR_MEDIUM,
+      fast = COLOR_FAST,
+      blazing = COLOR_BLAZING,
+    } = config.colors;
     const errors: string[] = [];
-    if (!Validator.isValidHex(colorSlow))
-      errors.push(`  - Invalid colorSlow: ${colorSlow}`);
-    if (!Validator.isValidHex(colorMedium))
-      errors.push(`  - Invalid colorMedium: ${colorMedium}`);
-    if (!Validator.isValidHex(colorFast))
-      errors.push(`  - Invalid colorFast: ${colorFast}`);
-    if (!Validator.isValidHex(colorBlazing))
-      errors.push(`  - Invalid colorBlazing: ${colorBlazing}`);
+    if (!Validator.isValidHex(slow))
+      errors.push(`  - Invalid colors.slow: ${slow}`);
+    if (!Validator.isValidHex(medium))
+      errors.push(`  - Invalid colors.medium: ${medium}`);
+    if (!Validator.isValidHex(fast))
+      errors.push(`  - Invalid colors.fast: ${fast}`);
+    if (!Validator.isValidHex(blazing))
+      errors.push(`  - Invalid colors.blazing: ${blazing}`);
     return { valid: errors.length === 0, errors };
   }
 

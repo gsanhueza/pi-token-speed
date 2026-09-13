@@ -1,7 +1,7 @@
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import type { SettingItem } from "@earendil-works/pi-tui";
 import { Input } from "@earendil-works/pi-tui";
-import type { TokenSpeedConfig } from "./config-types";
+import type { Colors, TierName } from "./config-types";
 import { settings } from "./settings";
 import { Validator } from "./validation";
 
@@ -9,18 +9,15 @@ import { Validator } from "./validation";
  * Color tier metadata.
  */
 interface ColorTier {
-  key: keyof Pick<
-    TokenSpeedConfig,
-    "colorSlow" | "colorMedium" | "colorFast" | "colorBlazing"
-  >;
+  key: TierName;
   label: string;
 }
 
 const COLOR_TIERS: ColorTier[] = [
-  { key: "colorSlow", label: "Slow" },
-  { key: "colorMedium", label: "Medium" },
-  { key: "colorFast", label: "Fast" },
-  { key: "colorBlazing", label: "Blazing" },
+  { key: "slow", label: "Slow" },
+  { key: "medium", label: "Medium" },
+  { key: "fast", label: "Fast" },
+  { key: "blazing", label: "Blazing" },
 ];
 
 /**
@@ -49,15 +46,15 @@ export const buildColorSettingsItems = (
   const config = settings.getConfig();
 
   return COLOR_TIERS.map((tier) => ({
-    id: tier.key,
-    label: `${coloredBlock(config[tier.key])} ${tier.label}`,
+    id: `colors.${tier.key as keyof Colors}`,
+    label: `${coloredBlock(config.colors[tier.key])} ${tier.label}`,
     description: `Hex color for the ${tier.label.toLowerCase()} TPS tier`,
-    currentValue: config[tier.key],
+    currentValue: config.colors[tier.key],
     submenu: (_currentValue: string, done: (value?: string) => void) => {
       const input = new Input();
       // Read the config value fresh each time the submenu opens
       // so that previously saved colors are reflected immediately
-      input.setValue(settings.getConfig()[tier.key]);
+      input.setValue(settings.getConfig().colors[tier.key]);
 
       input.onSubmit = (value: string) => {
         if (Validator.isValidHex(value)) {

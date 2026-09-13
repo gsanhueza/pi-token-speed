@@ -42,14 +42,18 @@ You can customize the display, speed thresholds and colors by adding a `tokenSpe
 ```json
 {
   "tokenSpeed": {
-    "tpsSlow": 0,
-    "tpsMedium": 15,
-    "tpsFast": 30,
-    "tpsBlazing": 45,
-    "colorSlow": "#ff4444",
-    "colorMedium": "#ffaa00",
-    "colorFast": "#00ff88",
-    "colorBlazing": "#44ddff",
+    "thresholds": {
+      "slow": 0,
+      "medium": 15,
+      "fast": 30,
+      "blazing": 45
+    },
+    "colors": {
+      "slow": "#ff4444",
+      "medium": "#ffaa00",
+      "fast": "#00ff88",
+      "blazing": "#44ddff"
+    },
     "display": "tps",
     "useProviderTokens": false,
     "countStrategy": "direct",
@@ -61,29 +65,52 @@ You can customize the display, speed thresholds and colors by adding a `tokenSpe
 }
 ```
 
+All keys are optional. If you're still using the old flat keys (`tpsSlow`, `colorFast`, …), see [Legacy Configuration](#legacy-configuration).
+
 ### Configuration Validation
 
 Invalid configuration values are automatically corrected to their defaults. A warning notification is displayed in the Pi status bar at session start listing any corrections made. The `slidingWindow` value is also clamped between `100ms` and `30000ms` (30s).
 
+### Legacy Configuration
+
+Earlier versions of pi-token-speed stored thresholds and colors as flat keys:
+
+```json
+{
+  "tokenSpeed": {
+    "tpsSlow": 0,
+    "tpsMedium": 15,
+    "tpsFast": 30,
+    "tpsBlazing": 45,
+    "colorSlow": "#ff4444",
+    "colorMedium": "#ffaa00",
+    "colorFast": "#00ff88",
+    "colorBlazing": "#44ddff"
+  }
+}
+```
+
+These keys are still honored, so your configuration keeps working as-is. However, they are considered legacy: a warning notification is shown at session start while any of them are present. Once you open `/tps` and store any value, the legacy keys are automatically converted to the nested `thresholds`/`colors` format and removed from the file — no manual editing needed.
+
 ### Configuration Options
 
-| Option              | Type                           | Default     | Description                                                      |
-| ------------------- | ------------------------------ | ----------- | ---------------------------------------------------------------- |
-| `tpsSlow`           | number                         | `0`         | Minimum TPS threshold ("slow")                                   |
-| `tpsMedium`         | number                         | `15`        | TPS above this is "medium"                                       |
-| `tpsFast`           | number                         | `30`        | TPS above this is "fast"                                         |
-| `tpsBlazing`        | number                         | `45`        | TPS above this is "blazing"                                      |
-| `colorSlow`         | string                         | `"#ff4444"` | Color for slow tier                                              |
-| `colorMedium`       | string                         | `"#ffaa00"` | Color for medium tier                                            |
-| `colorFast`         | string                         | `"#00ff88"` | Color for fast tier                                              |
-| `colorBlazing`      | string                         | `"#44ddff"` | Color for blazing tier                                           |
-| `slidingWindow`     | number                         | `1000`      | Sliding window duration in ms                                    |
-| `display`           | `tps`, `ttft`, `stats`, `full` | `tps`       | Display mode (see [Display Modes](#display-modes))               |
-| `useProviderTokens` | boolean                        | `false`     | Opt-in: use provider-reported count instead of the extension one |
-| `countStrategy`     | `estimate`, `direct`           | `direct`    | Token counting strategy used by the extension's own counter      |
-| `endTpsBehavior`    | `average`, `last`              | `average`   | What to show after streaming ends                                |
-| `icon`              | string                         | `"⚡"`      | Icon shown before TPS in the status bar                          |
-| `updateInterval`    | number                         | `0`         | Status bar update interval in ms (0 = every delta)               |
+| Option               | Type                           | Default     | Description                                                      |
+| -------------------- | ------------------------------ | ----------- | ---------------------------------------------------------------- |
+| `thresholds.slow`    | number                         | `0`         | Minimum TPS threshold ("slow")                                   |
+| `thresholds.medium`  | number                         | `15`        | TPS above this is "medium"                                       |
+| `thresholds.fast`    | number                         | `30`        | TPS above this is "fast"                                         |
+| `thresholds.blazing` | number                         | `45`        | TPS above this is "blazing"                                      |
+| `colors.slow`        | string                         | `"#ff4444"` | Color for slow tier                                              |
+| `colors.medium`      | string                         | `"#ffaa00"` | Color for medium tier                                            |
+| `colors.fast`        | string                         | `"#00ff88"` | Color for fast tier                                              |
+| `colors.blazing`     | string                         | `"#44ddff"` | Color for blazing tier                                           |
+| `slidingWindow`      | number                         | `1000`      | Sliding window duration in ms                                    |
+| `display`            | `tps`, `ttft`, `stats`, `full` | `tps`       | Display mode (see [Display Modes](#display-modes))               |
+| `useProviderTokens`  | boolean                        | `false`     | Opt-in: use provider-reported count instead of the extension one |
+| `countStrategy`      | `estimate`, `direct`           | `direct`    | Token counting strategy used by the extension's own counter      |
+| `endTpsBehavior`     | `average`, `last`              | `average`   | What to show after streaming ends                                |
+| `icon`               | string                         | `"⚡"`      | Icon shown before TPS in the status bar                          |
+| `updateInterval`     | number                         | `0`         | Status bar update interval in ms (0 = every delta)               |
 
 ### Interactive Menu
 
@@ -179,27 +206,31 @@ Alternatively, you can set colors directly in `~/.pi/agent/settings.json`:
 ```json
 {
   "tokenSpeed": {
-    "colorSlow": "#cc3333",
-    "colorMedium": "#cc8800",
-    "colorFast": "#00cc66",
-    "colorBlazing": "#33bbdd"
+    "colors": {
+      "slow": "#cc3333",
+      "medium": "#cc8800",
+      "fast": "#00cc66",
+      "blazing": "#33bbdd"
+    }
   }
 }
 ```
 
 ### Threshold Customization
 
-The four TPS tier thresholds can be customized via the `/tps` interactive menu by selecting **Thresholds**. Each tier opens a numeric input where you can enter a non-negative integer value. Thresholds must be in strict ascending order (`tpsSlow < tpsMedium < tpsFast < tpsBlazing`); invalid values are rejected with a warning.
+The four TPS tier thresholds can be customized via the `/tps` interactive menu by selecting **Thresholds**. Each tier opens a numeric input where you can enter a non-negative integer value. Thresholds must be in strict ascending order (`slow < medium < fast < blazing`); invalid values are rejected with a warning.
 
 Alternatively, you can set thresholds directly in `~/.pi/agent/settings.json`:
 
 ```json
 {
   "tokenSpeed": {
-    "tpsSlow": 0,
-    "tpsMedium": 20,
-    "tpsFast": 40,
-    "tpsBlazing": 60
+    "thresholds": {
+      "slow": 0,
+      "medium": 20,
+      "fast": 40,
+      "blazing": 60
+    }
   }
 }
 ```

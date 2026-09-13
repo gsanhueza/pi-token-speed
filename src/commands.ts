@@ -318,9 +318,58 @@ export class CommandManager {
       }
     }
 
+    // Reflect the reset value in the main menu's row. The submenus and the
+    // overrides editor refresh their own items; without this the main
+    // list's scalar rows would keep showing the pre-reset value until the
+    // menu was reopened. (Thresholds/Colors group resets were already
+    // handled above via refreshThresholdItems/refreshColorItems.)
+    const mainValue = this.formatMainValue(id, settings.getConfig());
+    if (mainValue !== undefined) {
+      this.settingsList?.updateValue(id, mainValue);
+    }
+
     // Re-render with the latest config (same tail as handleSettingChange)
     this.engine.initialize();
     this.renderer.update(ctx);
+  }
+
+  /**
+   * Formats a main-menu row's `currentValue` for a scalar setting id,
+   * mirroring `buildSettingsItems`. Used both when building the menu and
+   * when refreshing it after a reset.
+   *
+   * @param id The setting identifier
+   * @param config The resolved configuration
+   * @returns The formatted value, or undefined for group/per-tier ids
+   */
+  private formatMainValue(
+    id: string,
+    config: TokenSpeedConfig,
+  ): string | undefined {
+    switch (id) {
+      case Options.DISPLAY:
+        return DISPLAY_LABELS[config.display];
+      case Options.ICON:
+        return config.icon || "(empty)";
+      case Options.UPDATE_INTERVAL:
+        return (
+          UPDATE_INTERVAL_LABELS[config.updateInterval.toString()] ??
+          config.updateInterval.toString()
+        );
+      case Options.USE_PROVIDER_TOKENS:
+        return config.useProviderTokens ? TOGGLE_LABELS.on : TOGGLE_LABELS.off;
+      case Options.COUNT_STRATEGY:
+        return COUNT_STRATEGY_LABELS[config.countStrategy];
+      case Options.SLIDING_WINDOW:
+        return (
+          SLIDING_WINDOW_LABELS[config.slidingWindow.toString()] ??
+          config.slidingWindow.toString()
+        );
+      case Options.END_TPS_BEHAVIOR:
+        return END_TPS_BEHAVIOR_LABELS[config.endTpsBehavior];
+      default:
+        return undefined;
+    }
   }
 
   /**
@@ -458,17 +507,7 @@ export class CommandManager {
     theme: Theme,
     tui: TUI,
   ): SettingItem[] {
-    const {
-      display,
-      useProviderTokens,
-      countStrategy,
-      endTpsBehavior,
-      icon,
-      slidingWindow,
-      updateInterval,
-      colors,
-      thresholds,
-    } = config;
+    const { colors, thresholds } = config;
 
     const colorsDisplay = TIERS.map(({ key }) =>
       coloredBlock(colors[key]),
@@ -483,14 +522,14 @@ export class CommandManager {
         id: Options.DISPLAY,
         label: "Display mode",
         description: "Level of detail to show in the status bar",
-        currentValue: DISPLAY_LABELS[display],
+        currentValue: this.formatMainValue(Options.DISPLAY, config)!,
         values: Object.values(DISPLAY_LABELS),
       },
       {
         id: Options.ICON,
         label: ICON_LABEL,
         description: "Icon shown before TPS in the status bar",
-        currentValue: icon || "(empty)",
+        currentValue: this.formatMainValue(Options.ICON, config)!,
         values: [...ICONS, "(empty)"],
       },
       {
@@ -498,9 +537,7 @@ export class CommandManager {
         label: UPDATE_INTERVAL_LABEL,
         description:
           "How often to update the status bar. 0 = every delta (current behavior).",
-        currentValue:
-          UPDATE_INTERVAL_LABELS[updateInterval.toString()] ??
-          updateInterval.toString(),
+        currentValue: this.formatMainValue(Options.UPDATE_INTERVAL, config)!,
         values: Object.values(UPDATE_INTERVAL_LABELS),
       },
       // Token counting settings
@@ -509,7 +546,10 @@ export class CommandManager {
         label: "Use provider tokens",
         description:
           "Use the provider's token count instead of this extension's counter",
-        currentValue: useProviderTokens ? TOGGLE_LABELS.on : TOGGLE_LABELS.off,
+        currentValue: this.formatMainValue(
+          Options.USE_PROVIDER_TOKENS,
+          config,
+        )!,
         values: Object.values(TOGGLE_LABELS),
       },
       {
@@ -517,7 +557,7 @@ export class CommandManager {
         label: "Count strategy",
         description:
           "Direct counting (server streams tokens) vs estimate counting (server streams chunks)",
-        currentValue: COUNT_STRATEGY_LABELS[countStrategy],
+        currentValue: this.formatMainValue(Options.COUNT_STRATEGY, config)!,
         values: Object.values(COUNT_STRATEGY_LABELS),
       },
       // TPS calculation settings
@@ -526,9 +566,7 @@ export class CommandManager {
         label: SLIDING_WINDOW_LABEL,
         description:
           "Time window for TPS calculation. Larger = smoother, smaller = more reactive.",
-        currentValue:
-          SLIDING_WINDOW_LABELS[slidingWindow.toString()] ??
-          slidingWindow.toString(),
+        currentValue: this.formatMainValue(Options.SLIDING_WINDOW, config)!,
         values: Object.values(SLIDING_WINDOW_LABELS),
       },
       {
@@ -536,7 +574,7 @@ export class CommandManager {
         label: "End-of-stream TPS",
         description:
           "What to show after streaming: overall average or last sliding window value",
-        currentValue: END_TPS_BEHAVIOR_LABELS[endTpsBehavior],
+        currentValue: this.formatMainValue(Options.END_TPS_BEHAVIOR, config)!,
         values: Object.values(END_TPS_BEHAVIOR_LABELS),
       },
       // Tier customization

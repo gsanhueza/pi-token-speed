@@ -1,5 +1,5 @@
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
-import type { SettingItem } from "@earendil-works/pi-tui";
+import type { Component, SettingItem } from "@earendil-works/pi-tui";
 import { Input } from "@earendil-works/pi-tui";
 import type { TierName } from "./config-types";
 import { settings } from "./settings";
@@ -37,7 +37,10 @@ export const buildThresholdSettingsItems = (
     label: `${tier.label}`,
     description: `TPS threshold for the ${tier.label.toLowerCase()} tier`,
     currentValue: config.thresholds[tier.key].toString(),
-    submenu: (_currentValue: string, done: (value?: string) => void) => {
+    submenu: (
+      _currentValue: string,
+      done: (value?: string) => void,
+    ): Component => {
       const input = new Input();
       // Read the config value fresh each time the submenu opens
       // so that previously saved thresholds are reflected immediately
@@ -55,6 +58,8 @@ export const buildThresholdSettingsItems = (
           // Don't call done — keep the input open for correction
         }
       };
+
+      input.onEscape = () => done(undefined);
 
       return input;
     },

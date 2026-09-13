@@ -1,5 +1,5 @@
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
-import type { SettingItem } from "@earendil-works/pi-tui";
+import type { Component, SettingItem } from "@earendil-works/pi-tui";
 import { Input } from "@earendil-works/pi-tui";
 import type { Colors, TierName } from "./config-types";
 import { settings } from "./settings";
@@ -50,7 +50,10 @@ export const buildColorSettingsItems = (
     label: `${coloredBlock(config.colors[tier.key])} ${tier.label}`,
     description: `Hex color for the ${tier.label.toLowerCase()} TPS tier`,
     currentValue: config.colors[tier.key],
-    submenu: (_currentValue: string, done: (value?: string) => void) => {
+    submenu: (
+      _currentValue: string,
+      done: (value?: string) => void,
+    ): Component => {
       const input = new Input();
       // Read the config value fresh each time the submenu opens
       // so that previously saved colors are reflected immediately
@@ -67,6 +70,8 @@ export const buildColorSettingsItems = (
           // Don't call done — keep the input open for correction
         }
       };
+
+      input.onEscape = () => done(undefined);
 
       return input;
     },

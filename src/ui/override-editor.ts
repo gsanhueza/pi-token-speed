@@ -416,7 +416,7 @@ const buildBlockItems = (
       const tierItems = TIERS.map((tier) => ({
         id: `thresholds.${tier.key}`,
         label: tier.label,
-        description: `TPS threshold override for the ${tier.label.toLowerCase()} tier`,
+        description: `TPS threshold override for the ${tier.label.toLowerCase()} tier (Base: ${base.thresholds[tier.key]})`,
         currentValue: fieldValue(`thresholds.${tier.key}`, getBlock()),
         submenu: InputDialog.inputSubmenu(theme, tui, {
           title: `${tier.label} threshold override`,
@@ -453,7 +453,7 @@ const buildBlockItems = (
         return {
           id: `colors.${tier.key}`,
           label: `${coloredBlock(hex)} ${tier.label}`,
-          description: `Hex color override for the ${tier.label.toLowerCase()} tier`,
+          description: `Hex color override for the ${tier.label.toLowerCase()} tier (Base: ${base.colors[tier.key]})`,
           currentValue: fieldValue(`colors.${tier.key}`, getBlock()),
           submenu: InputDialog.inputSubmenu(theme, tui, {
             title: `${tier.label} color override`,
@@ -678,7 +678,7 @@ export class OverridesEditor implements Component, Focusable {
       const lines = this.settingsList.render(width);
       if (this.getProviderIds().length === 0) {
         lines[lines.length - 1] = getSettingsListTheme().hint(
-          "Press a to add a provider override · Esc to close",
+          "Press (a) to add a provider override · Esc to close",
         );
       }
       return lines;

@@ -30,6 +30,7 @@ import { Validator } from "../config/validation";
 import { HexColorInput } from "./color-input";
 import { coloredBlock } from "./color-picker";
 import { ConfirmDialog, InputDialog } from "./dialog";
+import { ResettableSettingsList } from "./resettable-settings-list";
 
 /**
  * `/tps overrides` editor — manages the `providerOverrides` map.
@@ -43,6 +44,11 @@ import { ConfirmDialog, InputDialog } from "./dialog";
  * The whole map is persisted via `settings.setProviderOverrides()` after
  * every change; the persisted snapshot is adopted so subsequent edits
  * never build on stale data.
+ *
+ * Every level also supports `r` ("return to default"): on a provider
+ * row it resets the whole block to base (after confirmation), on a field
+ * row it removes that override key, and on the Thresholds/Colors group
+ * rows it removes the whole group.
  */
 
 /** Label shown for fields not set in the override block. */
@@ -432,12 +438,15 @@ const buildBlockItems = (
         }),
       }));
       nested.thresholds = tierItems;
-      return new SettingsList(
+      // `r` on a tier row drops that tier's override key ("" is the
+      // same reset the input dialog's empty submit sends)
+      return new ResettableSettingsList(
         tierItems,
         Math.min(tierItems.length + 2, 15),
         getSettingsListTheme(),
         commit,
         () => submenuDone(undefined),
+        (id) => commit(id, ""),
       );
     },
   });
@@ -472,12 +481,14 @@ const buildBlockItems = (
         };
       });
       nested.colors = tierItems;
-      return new SettingsList(
+      // `r` on a tier row drops that tier's override key
+      return new ResettableSettingsList(
         tierItems,
         Math.min(tierItems.length + 2, 15),
         getSettingsListTheme(),
         commit,
         () => submenuDone(undefined),
+        (id) => commit(id, ""),
       );
     },
   });
@@ -544,15 +555,12 @@ const createBlockList = (
     }
   }
 
-  function commit(id: string, value: string) {
-    const current = options.overrides[providerId] ?? {};
-    const nextBlock = computeNextBlock(options, current, id, value);
-    if (nextBlock === null) return;
-
-    const next: ProviderOverrides = {
-      ...options.overrides,
-      [providerId]: nextBlock,
-    };
+  function applyNextBlock(nextBlock: ProviderOverride) {
+    const next: ProviderOverrides = { ...options.overrides };
+    // An empty block is equivalent to no block (every field falls back
+    // to base): drop the entry so the map never accumulates empty objects
+    if (Object.keys(nextBlock).length === 0) delete next[providerId];
+    else next[providerId] = nextBlock;
     void (async () => {
       const ok = await persistNext(options, next);
       if (!ok) return;
@@ -562,7 +570,36 @@ const createBlockList = (
     })();
   }
 
-  return new SettingsList(
+  function commit(id: string, value: string) {
+    const current = options.overrides[providerId] ?? {};
+    const nextBlock = computeNextBlock(options, current, id, value);
+    if (nextBlock === null) return;
+    applyNextBlock(nextBlock);
+  }
+
+  /**
+   * `r` shortcut: resets the selected row to its base value. Scalar
+   * fields and per-tier rows drop their override key; the Thresholds
+   * and Colors group rows drop the whole group.
+   */
+  function resetField(id: string) {
+    const current = options.overrides[providerId] ?? {};
+    if (id === "thresholds" || id === "colors") {
+      const nextBlock = { ...current };
+      delete nextBlock[id];
+      applyNextBlock(nextBlock);
+      return;
+    }
+    // Same value the reset paths send: BASE for cycling fields, "" for
+    // the input-dialog fields (per-tier rows)
+    const value =
+      id.startsWith("thresholds.") || id.startsWith("colors.") ? "" : BASE;
+    const nextBlock = computeNextBlock(options, current, id, value);
+    if (nextBlock === null) return;
+    applyNextBlock(nextBlock);
+  }
+
+  return new ResettableSettingsList(
     items,
     Math.min(items.length + 2, 15),
     getSettingsListTheme(),
@@ -571,6 +608,7 @@ const createBlockList = (
       onClose();
       done();
     },
+    resetField,
   );
 };
 
@@ -699,7 +737,7 @@ export class OverridesEditor implements Component, Focusable {
     const items: SettingItem[] = ids.map((id, i) => ({
       id: `provider-${i}`,
       label: id,
-      description: "Enter: edit this provider's overrides",
+      description: "(a) add provider · (d) remove provider",
       currentValue: formatOverrideSummary(this.options.overrides[id] ?? {}),
       submenu: (_cv: string, done: (value?: string) => void) => {
         this.submenuOpen = true;
@@ -721,7 +759,7 @@ export class OverridesEditor implements Component, Focusable {
       },
     }));
 
-    return new SettingsList(
+    return new ResettableSettingsList(
       items,
       Math.min(items.length + 2, 15),
       getSettingsListTheme(),
@@ -730,6 +768,12 @@ export class OverridesEditor implements Component, Focusable {
       },
       () => {
         this.options.done();
+      },
+      // `r` on a provider row resets its whole block to base
+      (itemId) => {
+        const providerId =
+          this.getProviderIds()[Number(itemId.slice("provider-".length))];
+        if (providerId !== undefined) this.beginReset(providerId);
       },
     );
   }
@@ -778,20 +822,55 @@ export class OverridesEditor implements Component, Focusable {
     this.options.tui.requestRender();
   }
 
+  /**
+   * Opens the confirmation dialog for deleting the selected provider's
+   * override block (`d`).
+   */
   private beginConfirm(): void {
     const id = this.getProviderIds()[this.selectedIndex];
     if (!id) return;
 
+    this.openConfirmDialog(
+      "Delete provider override",
+      `Delete overrides for "${id}"?`,
+      () => {
+        void this.deleteSelected();
+      },
+    );
+  }
+
+  /**
+   * Opens the confirmation dialog for resetting all of a provider's
+   * overrides back to base (`r` on a provider row). Removing the block
+   * is exactly the reset: an absent block means every field falls back
+   * to base, so this reuses the delete path.
+   */
+  private beginReset(providerId: string): void {
+    this.openConfirmDialog(
+      "Reset provider overrides",
+      `Reset all overrides for "${providerId}" to base?`,
+      () => {
+        void this.deleteSelected();
+      },
+    );
+  }
+
+  /** Opens the confirmation dialog shared by delete/reset. */
+  private openConfirmDialog(
+    title: string,
+    message: string,
+    onConfirm: () => void,
+  ): void {
     const { theme, tui } = this.options;
     this.mode = "confirm";
     this.confirmDialog = new ConfirmDialog({
       theme,
       tui,
-      title: "Delete provider override",
-      message: `Delete overrides for "${id}"?`,
+      title,
+      message,
       onConfirm: () => {
         this.confirmDialog = undefined;
-        void this.deleteSelected();
+        onConfirm();
       },
       onCancel: () => {
         this.confirmDialog = undefined;

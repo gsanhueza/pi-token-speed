@@ -332,14 +332,17 @@ The `/tps` command offers `⚡`, `🔥`, `💨`, `🚀` and none. You can also s
 
 ## Commands
 
-| Command | Description                                                                                   |
-| ------- | --------------------------------------------------------------------------------------------- |
-| `/tps`  | Open settings menu to configure available options (see [Interactive Menu](#interactive-menu)) |
+| Command          | Description                                            |
+| ---------------- | ------------------------------------------------------ |
+| `/tps`           | Open the settings menu to configure available options. |
+| `/tps overrides` | Manage per-provider overrides                          |
 
-| Command          | Description                                                                                                                                                                         |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/tps`           | Open settings menu to configure available options (see [Interactive Menu](#interactive-menu))                                                                                       |
-| `/tps overrides` | Manage per-provider overrides: add (`a`) or delete (`d`) providers, edit their override blocks. Unset fields show `(base)`; resetting a field to `(base)` removes it from the block |
+The settings menu is described in detail in [Interactive Menu](#interactive-menu). All menus share the same keys:
+
+- `Enter`/`Space` — change the selected value (or open its submenu)
+- `r` — reset the selected row to its default: a setting, a threshold/color tier, or a provider's whole override block (confirmed before applying)
+- `Esc` — go back
+- In `/tps overrides` only: `a` adds a provider override, `d` deletes it (after confirmation). Unset fields show `(base)`; resetting a field to `(base)` removes it from the block
 
 ## How It Works
 

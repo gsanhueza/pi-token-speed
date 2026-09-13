@@ -29,6 +29,7 @@ import { TokenSpeedEngine } from "./core/engine";
 import { buildColorSettingsItems, coloredBlock } from "./ui/color-picker";
 import { OverridesEditor } from "./ui/override-editor";
 import type { Renderer } from "./ui/renderer";
+import { ResettableSettingsList } from "./ui/resettable-settings-list";
 import { buildThresholdSettingsItems } from "./ui/threshold-picker";
 
 /**
@@ -121,6 +122,7 @@ export class CommandManager {
         items,
         async (id, newValue) => this.handleSettingChange(id, newValue, ctx),
         done,
+        ctx,
       );
       return this.settingsList;
     });
@@ -257,31 +259,110 @@ export class CommandManager {
   }
 
   /**
+   * `r` shortcut: resets the selected setting to its built-in default
+   * (see `defaults.ts`). Per-tier ids (`thresholds.slow`, `colors.fast`)
+   * reset just that tier; the Thresholds/Colors group ids reset all
+   * tiers at once. The default value is written explicitly (there is no
+   * key-removal API), which is equivalent at read time.
+   *
+   * @param id The setting identifier
+   * @param ctx The command context
+   */
+  private async resetSetting(
+    id: string,
+    ctx: ExtensionCommandContext,
+  ): Promise<void> {
+    const defaults = settings.getDefaultConfig();
+
+    switch (id) {
+      case Options.DISPLAY:
+        await settings.setConfig({ display: defaults.display });
+        break;
+      case Options.ICON:
+        await settings.setConfig({ icon: defaults.icon });
+        break;
+      case Options.UPDATE_INTERVAL:
+        await settings.setConfig({ updateInterval: defaults.updateInterval });
+        break;
+      case Options.USE_PROVIDER_TOKENS:
+        await settings.setConfig({
+          useProviderTokens: defaults.useProviderTokens,
+        });
+        break;
+      case Options.COUNT_STRATEGY:
+        await settings.setConfig({ countStrategy: defaults.countStrategy });
+        break;
+      case Options.SLIDING_WINDOW:
+        await settings.setConfig({ slidingWindow: defaults.slidingWindow });
+        break;
+      case Options.END_TPS_BEHAVIOR:
+        await settings.setConfig({ endTpsBehavior: defaults.endTpsBehavior });
+        break;
+      case Options.THRESHOLDS:
+        await settings.setConfig({ thresholds: { ...defaults.thresholds } });
+        this.refreshThresholdItems();
+        break;
+      case Options.COLORS:
+        await settings.setConfig({ colors: { ...defaults.colors } });
+        this.refreshColorItems();
+        break;
+      default: {
+        if (id.startsWith("thresholds.")) {
+          const tier = id.slice("thresholds.".length) as TierName;
+          await settings.setConfig({
+            thresholds: { [tier]: defaults.thresholds[tier] },
+          });
+          this.refreshThresholdItems();
+        } else if (id.startsWith("colors.")) {
+          const tier = id.slice("colors.".length) as TierName;
+          await settings.setConfig({
+            colors: { [tier]: defaults.colors[tier] },
+          });
+          this.refreshColorItems();
+        } else {
+          return;
+        }
+      }
+    }
+
+    // Re-render with the latest config (same tail as handleSettingChange)
+    this.engine.initialize();
+    this.renderer.update(ctx);
+  }
+
+  /**
    * Creates the SettingsList for the token speed settings menu.
+   * `r` resets the selected setting to its built-in default.
    *
    * @param items The settings items to display
    * @param onChange Callback when a setting value changes
    * @param onClose Callback when the dialog closes
+   * @param ctx The command context (for `resetSetting`)
    * @returns The configured SettingsList instance
    */
   private createSettingsList(
     items: SettingItem[],
     onChange: (id: string, newValue: string) => void,
     onClose: () => void,
+    ctx: ExtensionCommandContext,
   ): SettingsList {
-    return new SettingsList(
+    return new ResettableSettingsList(
       items,
       items.length,
       getSettingsListTheme(),
       onChange,
       onClose,
+      (id) => {
+        void this.resetSetting(id, ctx);
+      },
     );
   }
 
   /**
    * Creates the SettingsList for a tier-customization submenu
    * (thresholds or colors). Changes are routed back through
-   * `handleSettingChange` so persistence and refreshes stay centralized.
+   * `handleSettingChange` so persistence and refreshes stay centralized;
+   * `r` resets the selected tier (or the whole group) to its default.
    *
    * @param items The settings items to display
    * @param ctx The command context (for `handleSettingChange`)
@@ -293,7 +374,7 @@ export class CommandManager {
     ctx: ExtensionCommandContext,
     done: (value?: string) => void,
   ): SettingsList {
-    return new SettingsList(
+    return new ResettableSettingsList(
       items,
       Math.min(items.length + 2, 15),
       getSettingsListTheme(),
@@ -301,6 +382,9 @@ export class CommandManager {
         this.handleSettingChange(id, newValue, ctx);
       },
       () => done(undefined),
+      (id) => {
+        void this.resetSetting(id, ctx);
+      },
     );
   }
 

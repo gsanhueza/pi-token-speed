@@ -22,6 +22,10 @@
       "./index.ts"
     ]
   },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
   "prettier": {
     "plugins": [
       "prettier-plugin-organize-imports"
@@ -33,6 +37,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.4.1",
-    "prettier-plugin-organize-imports": "^4.3.0"
+    "prettier-plugin-organize-imports": "^4.3.0",
+    "vitest": "^5.0.0"
   }
 }

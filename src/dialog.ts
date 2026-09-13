@@ -79,7 +79,7 @@ export class InputDialog extends BaseDialog {
     this.options = options;
 
     const initial = options.initialValue ?? "";
-    this.input = new Input();
+    this.input = options.createInput?.() ?? new Input();
     this.input.setValue(initial);
     for (let i = 0; i < [...initial].length; i++) {
       this.input.handleInput("\x1b[C");
@@ -152,17 +152,15 @@ export class InputDialog extends BaseDialog {
 
   /**
    * Builds a `SettingItem.submenu` factory that opens an `InputDialog`.
+   *
+   * @param theme The active theme (for dialog styling)
+   * @param tui The TUI instance (for re-renders while the dialog is open)
+   * @param options Dialog content options (title, message, validation, ...
+   *   and optionally `createInput` for a custom input component).
+   *   `onSubmit`/`onCancel` are wired to the submenu's `done` callback.
    */
   static inputSubmenu =
-    (
-      theme: Theme,
-      tui: TUI,
-      title: string,
-      message: string,
-      placeholder: string | undefined,
-      initialValue: string,
-      validate?: (raw: string) => string | null,
-    ) =>
+    (theme: Theme, tui: TUI, options: SubmenuOptions) =>
     (
       _currentValue: string,
       done: (selectedValue?: string) => void,
@@ -170,11 +168,7 @@ export class InputDialog extends BaseDialog {
       const dialog = new InputDialog({
         theme,
         tui,
-        title,
-        message,
-        placeholder,
-        initialValue,
-        validate,
+        ...options,
         onSubmit: (value) => done(value),
         onCancel: () => done(undefined),
       });
@@ -182,6 +176,16 @@ export class InputDialog extends BaseDialog {
       return dialog;
     };
 }
+
+/**
+ * Dialog content options accepted by `InputDialog.inputSubmenu`.
+ * Theme/TUI are passed separately; submit/cancel are wired to the
+ * submenu's `done` callback.
+ */
+export type SubmenuOptions = Omit<
+  InputDialogOptions,
+  "theme" | "tui" | "onSubmit" | "onCancel"
+>;
 
 export interface InputDialogOptions {
   theme: Theme;
@@ -191,6 +195,8 @@ export interface InputDialogOptions {
   placeholder?: string;
   initialValue?: string;
   validate?: (raw: string) => string | null;
+  /** Optional factory for the input component (e.g. HexColorInput). */
+  createInput?: () => Input;
   onSubmit: (value: string) => void;
   onCancel: () => void;
 }

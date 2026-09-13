@@ -201,6 +201,8 @@ This is also configurable via the `/tps` interactive menu.
 
 The four TPS tier colors can be customized via the `/tps` interactive menu by selecting **Colors**. Each tier opens a hex color input where you can enter a custom `#RRGGBB` value.
 
+As you type, the input live-previews the color: once the value forms a complete valid hex string, the text is rendered in that color (and reverts if you delete characters).
+
 Alternatively, you can set colors directly in `~/.pi/agent/settings.json`:
 
 ```json

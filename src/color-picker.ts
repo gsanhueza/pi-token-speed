@@ -1,5 +1,6 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import type { SettingItem, TUI } from "@earendil-works/pi-tui";
+import { HexColorInput } from "./color-input";
 import type { Colors, TierName } from "./config-types";
 import { InputDialog } from "./dialog";
 import { settings } from "./settings";
@@ -54,16 +55,16 @@ export const buildColorSettingsItems = (
     currentValue: config.colors[tier.key],
     // Read the config value fresh each time the submenu opens
     // so that previously saved colors are reflected immediately
-    submenu: InputDialog.inputSubmenu(
-      theme,
-      tui,
-      `${tier.label} color`,
-      `Hex color for the ${tier.label.toLowerCase()} tier`,
-      "#RRGGBB",
-      settings.getConfig().colors[tier.key],
+    submenu: InputDialog.inputSubmenu(theme, tui, {
+      title: `${tier.label} color`,
+      message: `Hex color for the ${tier.label.toLowerCase()} tier`,
+      placeholder: "#RRGGBB",
+      initialValue: settings.getConfig().colors[tier.key],
+      // Live hex preview while typing (see PLAN_COLORS.md).
+      createInput: () => new HexColorInput(),
       // Normalize on commit: hex is stored lower-cased regardless of
       // how the user typed it (isValidHex accepts both cases).
-      (raw) => (Validator.isValidHex(raw) ? raw.toLowerCase() : null),
-    ),
+      validate: (raw) => (Validator.isValidHex(raw) ? raw.toLowerCase() : null),
+    }),
   }));
 };

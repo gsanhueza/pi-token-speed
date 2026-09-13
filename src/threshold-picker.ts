@@ -41,19 +41,17 @@ export const buildThresholdSettingsItems = (
     currentValue: config.thresholds[tier.key].toString(),
     // Read the config value fresh each time the submenu opens
     // so that previously saved thresholds are reflected immediately
-    submenu: InputDialog.inputSubmenu(
-      theme,
-      tui,
-      `${tier.label} threshold`,
-      `TPS threshold for the ${tier.label.toLowerCase()} tier`,
-      "non-negative integer",
-      settings.getConfig().thresholds[tier.key].toString(),
-      (raw) => {
+    submenu: InputDialog.inputSubmenu(theme, tui, {
+      title: `${tier.label} threshold`,
+      message: `TPS threshold for the ${tier.label.toLowerCase()} tier`,
+      placeholder: "non-negative integer",
+      initialValue: settings.getConfig().thresholds[tier.key].toString(),
+      validate: (raw) => {
         const num = Number(raw);
         return Number.isFinite(num) && num >= 0 && Number.isInteger(num)
           ? num.toString()
           : null;
       },
-    ),
+    }),
   }));
 };

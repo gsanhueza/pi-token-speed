@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { TokenSpeedConfig } from "../src/config/config-types";import {
+import type { TokenSpeedConfig } from "../src/config/config-types";
+import {
   COLOR_BLAZING,
   COLOR_FAST,
   COLOR_MEDIUM,
@@ -112,7 +113,8 @@ describe("TokenSpeedEngine", () => {
       const est = new TokenSpeedEngine();
       est.initialize();
       est.start();
-      (est as unknown as { _countStrategy: string })._countStrategy = "estimate";
+      (est as unknown as { _countStrategy: string })._countStrategy =
+        "estimate";
       return est;
     };
 

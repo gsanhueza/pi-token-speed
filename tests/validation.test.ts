@@ -1,20 +1,21 @@
 import { describe, expect, it } from "vitest";
 
-import { MAX_SLIDING_WINDOW, MIN_SLIDING_WINDOW } from "../src/config/constants";
-import { Validator } from "../src/config/validation";
+import {
+  MAX_SLIDING_WINDOW,
+  MIN_SLIDING_WINDOW,
+} from "../src/config/constants";
 import { settings } from "../src/config/settings";
+import { Validator } from "../src/config/validation";
 
 const defaults = settings.getDefaultConfig();
 
 describe("Validator.isValidHex", () => {
-  it.each([
-    "#00ff88",
-    "#FFFFFF",
-    "#000000",
-    "#a1B2c3",
-  ])("accepts valid hex %s", (hex) => {
-    expect(Validator.isValidHex(hex)).toBe(true);
-  });
+  it.each(["#00ff88", "#FFFFFF", "#000000", "#a1B2c3"])(
+    "accepts valid hex %s",
+    (hex) => {
+      expect(Validator.isValidHex(hex)).toBe(true);
+    },
+  );
 
   it.each([
     "00ff88", // missing #
@@ -58,9 +59,9 @@ describe("Validator.validate", () => {
       countStrategy: "wizard" as never,
     });
     expect(config.countStrategy).toBe(defaults.countStrategy);
-    expect(errors.some((e) => e.includes('Invalid countStrategy "wizard"'))).toBe(
-      true,
-    );
+    expect(
+      errors.some((e) => e.includes('Invalid countStrategy "wizard"')),
+    ).toBe(true);
   });
 
   it("corrects an invalid endTpsBehavior to the default", () => {
@@ -74,19 +75,17 @@ describe("Validator.validate", () => {
     ).toBe(true);
   });
 
-  it.each([
-    undefined,
-    "true",
-    1,
-    null,
-  ])("corrects non-boolean useProviderTokens (%s)", (value) => {
-    const { config, errors } = Validator.validate({
-      ...defaults,
-      useProviderTokens: value as never,
-    });
-    expect(config.useProviderTokens).toBe(defaults.useProviderTokens);
-    expect(errors.some((e) => e.includes("useProviderTokens"))).toBe(true);
-  });
+  it.each([undefined, "true", 1, null])(
+    "corrects non-boolean useProviderTokens (%s)",
+    (value) => {
+      const { config, errors } = Validator.validate({
+        ...defaults,
+        useProviderTokens: value as never,
+      });
+      expect(config.useProviderTokens).toBe(defaults.useProviderTokens);
+      expect(errors.some((e) => e.includes("useProviderTokens"))).toBe(true);
+    },
+  );
 
   it.each([
     50, // below minimum
@@ -125,7 +124,9 @@ describe("Validator.validate", () => {
       fast: 1,
     }); // error-only check: not corrected
     expect(
-      errors.some((e) => e.includes("TPS thresholds must be in ascending order")),
+      errors.some((e) =>
+        e.includes("TPS thresholds must be in ascending order"),
+      ),
     ).toBe(true);
   });
 
@@ -134,9 +135,7 @@ describe("Validator.validate", () => {
       ...defaults,
       colors: { ...defaults.colors, fast: "not-a-color" },
     });
-    expect(
-      errors.some((e) => e.includes("Invalid colors.fast")),
-    ).toBe(true);
+    expect(errors.some((e) => e.includes("Invalid colors.fast"))).toBe(true);
   });
 
   it("accepts a valid non-default config", () => {

@@ -92,3 +92,20 @@ export const SLIDING_WINDOW_LABELS: Record<string, string> = {
  * Human-readable label for slidingWindow setting.
  */
 export const SLIDING_WINDOW_LABEL = "Sliding window";
+
+/**
+ * Inverts a label map, swapping keys and values.
+ *
+ * E.g., `{ tps: "TPS speed" }` → `{ "TPS speed": "tps" }`.
+ * Used to convert the user-facing label shown in a SettingsList back to
+ * the config value when a setting is changed.
+ */
+export const invertLabels = <K extends string>(
+  obj: Record<K, string>,
+): Record<string, K> => {
+  const result = {} as Record<string, K>;
+  for (const key in obj) {
+    result[obj[key]] = key;
+  }
+  return result;
+};

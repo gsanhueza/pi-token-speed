@@ -16,6 +16,7 @@ import {
   END_TPS_BEHAVIOR_LABELS,
   ICON_LABEL,
   ICONS,
+  invertLabels,
   SLIDING_WINDOW_LABEL,
   SLIDING_WINDOW_LABELS,
   TIERS,
@@ -194,21 +195,17 @@ export class CommandManager {
   ): Promise<void> {
     if (id === Options.DISPLAY) {
       await settings.setConfig({
-        display: CommandManager.invertLabels(DISPLAY_LABELS)[newValue],
+        display: invertLabels(DISPLAY_LABELS)[newValue],
       });
     } else if (id === Options.USE_PROVIDER_TOKENS) {
       await settings.setConfig({ useProviderTokens: newValue === "On" });
     } else if (id === Options.COUNT_STRATEGY) {
       await settings.setConfig({
-        countStrategy: CommandManager.invertLabels(COUNT_STRATEGY_LABELS)[
-          newValue
-        ],
+        countStrategy: invertLabels(COUNT_STRATEGY_LABELS)[newValue],
       });
     } else if (id === Options.END_TPS_BEHAVIOR) {
       await settings.setConfig({
-        endTpsBehavior: CommandManager.invertLabels(END_TPS_BEHAVIOR_LABELS)[
-          newValue
-        ],
+        endTpsBehavior: invertLabels(END_TPS_BEHAVIOR_LABELS)[newValue],
       });
     } else if (id === Options.ICON) {
       await settings.setConfig({
@@ -216,15 +213,11 @@ export class CommandManager {
       });
     } else if (id === Options.UPDATE_INTERVAL) {
       await settings.setConfig({
-        updateInterval: Number(
-          CommandManager.invertLabels(UPDATE_INTERVAL_LABELS)[newValue],
-        ),
+        updateInterval: Number(invertLabels(UPDATE_INTERVAL_LABELS)[newValue]),
       });
     } else if (id === Options.SLIDING_WINDOW) {
       await settings.setConfig({
-        slidingWindow: Number(
-          CommandManager.invertLabels(SLIDING_WINDOW_LABELS)[newValue],
-        ),
+        slidingWindow: Number(invertLabels(SLIDING_WINDOW_LABELS)[newValue]),
       });
     } else if (id.startsWith("colors.")) {
       // Ids are namespaced as "colors.<tier>"; only the changed tier is
@@ -570,22 +563,5 @@ export class CommandManager {
         },
       },
     ];
-  }
-
-  /**
-   * Inverts a label map, swapping keys and values.
-   *
-   * E.g., `{ tps: "TPS speed" }` → `{ "TPS speed": "tps" }`.
-   * Used to convert the user-facing label back to the config value
-   * when a setting is changed via the SettingsList.
-   */
-  private static invertLabels<K extends string>(
-    obj: Record<K, string>,
-  ): Record<string, K> {
-    const result = {} as Record<string, K>;
-    for (const key in obj) {
-      result[obj[key]] = key;
-    }
-    return result;
   }
 }

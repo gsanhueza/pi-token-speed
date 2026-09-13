@@ -22,8 +22,10 @@ import {
   END_TPS_BEHAVIOR_LABELS,
   ICONS,
   SLIDING_WINDOW_LABELS,
+  TIERS,
   TOGGLE_LABELS,
   UPDATE_INTERVAL_LABELS,
+  invertLabels,
 } from "../config/options";
 import { settings } from "../config/settings";
 import { Validator } from "../config/validation";
@@ -68,13 +70,6 @@ const Fields = {
   END_TPS_BEHAVIOR: "endTpsBehavior",
 } as const;
 
-const TIERS: { key: TierName; label: string }[] = [
-  { key: "slow", label: "Slow" },
-  { key: "medium", label: "Medium" },
-  { key: "fast", label: "Fast" },
-  { key: "blazing", label: "Blazing" },
-];
-
 /** Shared editor options, mirroring pi-llama-cpp's OverrideSettingsListOptions. */
 interface OverridesEditorOptions {
   tui: TUI;
@@ -95,12 +90,6 @@ interface OverridesEditorOptions {
   /** Notifies about validation warnings */
   onWarning: (message: string) => void;
 }
-
-/**
- * Inverts a label map (`{ tps: "TPS speed" }` → `{ "TPS speed": "tps" }`).
- */
-const invertLabels = (obj: Record<string, string>): Record<string, string> =>
-  Object.fromEntries(Object.entries(obj).map(([k, v]) => [v, k]));
 
 /**
  * Persists `next`; on success adopts it as the editor's snapshot.
@@ -296,18 +285,12 @@ const computeNextBlock = (
     if (Object.keys(thresholds).length > 0) {
       // Validate the effective ordering (base fallback for omitted tiers)
       const merged = { ...base.thresholds, ...thresholds };
-      const ordered =
-        merged.slow < merged.medium &&
-        merged.medium < merged.fast &&
-        merged.fast < merged.blazing;
-      if (!ordered) {
-        options.onWarning(
-          [
-            "[pi-token-speed]",
-            "- TPS thresholds must be in ascending order.",
-            `  Effective: ${merged.slow} < ${merged.medium} < ${merged.fast} < ${merged.blazing}.`,
-          ].join("\n"),
-        );
+      const result = Validator.isValidThresholdOrder({
+        ...base,
+        thresholds: merged,
+      });
+      if (!result.valid) {
+        options.onWarning(["[pi-token-speed]", ...result.errors!].join("\n"));
         return null;
       }
       next.thresholds = thresholds;

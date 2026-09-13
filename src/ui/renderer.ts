@@ -51,8 +51,7 @@ export class Renderer {
 
     // Render TPS first
     const { tps } = this.engine;
-    const value = tps?.toFixed(1);
-    const measurement = value ? `${value} tok/s` : "--";
+    const measurement = `${tps.toFixed(1)} tok/s`;
 
     const color = this.getColor(config, tps);
     const displayValue = truecolor(measurement, color);
@@ -74,9 +73,7 @@ export class Renderer {
    * @param tps The TPS value to colorize
    * @returns The hex color string, or empty string if no color should be applied.
    */
-  private getColor(config: TokenSpeedConfig, tps: number | null): string {
-    if (tps == null) return "";
-
+  private getColor(config: TokenSpeedConfig, tps: number): string {
     if (tps >= config.thresholds.blazing) return config.colors.blazing;
     if (tps >= config.thresholds.fast) return config.colors.fast;
     if (tps >= config.thresholds.medium) return config.colors.medium;

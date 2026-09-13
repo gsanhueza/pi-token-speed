@@ -207,11 +207,7 @@ export class Validator {
           }
         }
         const merged = { ...base.thresholds, ...partial };
-        const validOrder =
-          merged.slow < merged.medium &&
-          merged.medium < merged.fast &&
-          merged.fast < merged.blazing;
-        if (!validOrder) {
+        if (!Validator.isAscendingThresholds(merged)) {
           drop(
             "thresholds",
             `Thresholds must be in ascending order (effective: ${merged.slow} < ${merged.medium} < ${merged.fast} < ${merged.blazing})`,
@@ -261,6 +257,21 @@ export class Validator {
   }
 
   /**
+   * Checks that a complete set of tier thresholds is in strict ascending
+   * order: slow < medium < fast < blazing.
+   *
+   * @param thresholds The full thresholds object to check
+   * @returns True if the thresholds are in ascending order
+   */
+  static isAscendingThresholds(thresholds: Thresholds): boolean {
+    return (
+      thresholds.slow < thresholds.medium &&
+      thresholds.medium < thresholds.fast &&
+      thresholds.fast < thresholds.blazing
+    );
+  }
+
+  /**
    * Validates that TPS thresholds are in strict ascending order:
    * slow < medium < fast < blazing.
    *
@@ -277,7 +288,12 @@ export class Validator {
       fast = TPS_THRESHOLD_FAST,
       blazing = TPS_THRESHOLD_BLAZING,
     } = config.thresholds;
-    const valid = slow < medium && medium < fast && fast < blazing;
+    const valid = Validator.isAscendingThresholds({
+      slow,
+      medium,
+      fast,
+      blazing,
+    });
     return {
       valid,
       errors: valid

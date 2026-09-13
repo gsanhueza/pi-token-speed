@@ -1,7 +1,11 @@
 import type {
+  Colors,
   CountStrategy,
   DisplayMode,
   EndTpsBehavior,
+  ProviderOverride,
+  Thresholds,
+  TierName,
   TokenSpeedConfig,
 } from "./config-types";
 import { MAX_SLIDING_WINDOW, MIN_SLIDING_WINDOW } from "./constants";
@@ -97,6 +101,163 @@ export class Validator {
    */
   static isValidHex(s: string): boolean {
     return /^#[0-9a-fA-F]{6}$/.test(s);
+  }
+
+  /**
+   * Validates a single provider override block against the base config.
+   * Only explicitly-set keys are checked; invalid keys are dropped (with a
+   * prefixed error) so the effective value falls back to base instead of a
+   * global default.
+   *
+   * Threshold/color groups are validated against the effective (base-merged)
+   * values so an override can't create an invalid ordering via fallback.
+   *
+   * @param providerId The provider the block applies to (for error messages)
+   * @param override The raw override block
+   * @param base The merged base config used as fallback
+   * @returns The cleaned block (invalid keys removed) and error messages
+   */
+  static validateOverride(
+    providerId: string,
+    override: ProviderOverride,
+    base: TokenSpeedConfig,
+  ): { config: ProviderOverride; errors: string[] } {
+    const cleaned: ProviderOverride = { ...override };
+    const errors: string[] = [];
+    const prefix = `providerOverrides["${providerId}"]`;
+    const drop = (key: string, detail: string) => {
+      errors.push(`- ${prefix}: ${detail} — falling back to base.`);
+      delete cleaned[key as keyof ProviderOverride];
+    };
+
+    if (
+      cleaned.display !== undefined &&
+      !Object.keys(DISPLAY_LABELS).includes(cleaned.display)
+    ) {
+      drop("display", `Invalid display "${cleaned.display}"`);
+    }
+
+    if (
+      cleaned.countStrategy !== undefined &&
+      !Object.keys(COUNT_STRATEGY_LABELS).includes(cleaned.countStrategy)
+    ) {
+      drop("countStrategy", `Invalid countStrategy "${cleaned.countStrategy}"`);
+    }
+
+    if (
+      cleaned.endTpsBehavior !== undefined &&
+      !Object.keys(END_TPS_BEHAVIOR_LABELS).includes(
+        cleaned.endTpsBehavior as string,
+      )
+    ) {
+      drop(
+        "endTpsBehavior",
+        `Invalid endTpsBehavior "${cleaned.endTpsBehavior}"`,
+      );
+    }
+
+    if (
+      cleaned.useProviderTokens !== undefined &&
+      typeof cleaned.useProviderTokens !== "boolean"
+    ) {
+      drop("useProviderTokens", "Invalid useProviderTokens (expected boolean)");
+    }
+
+    if (
+      cleaned.slidingWindow !== undefined &&
+      !(
+        typeof cleaned.slidingWindow === "number" &&
+        cleaned.slidingWindow >= MIN_SLIDING_WINDOW &&
+        cleaned.slidingWindow <= MAX_SLIDING_WINDOW
+      )
+    ) {
+      drop("slidingWindow", `Invalid slidingWindow "${cleaned.slidingWindow}"`);
+    }
+
+    if (
+      cleaned.updateInterval !== undefined &&
+      !(
+        typeof cleaned.updateInterval === "number" &&
+        cleaned.updateInterval >= 0
+      )
+    ) {
+      drop(
+        "updateInterval",
+        `Invalid updateInterval "${cleaned.updateInterval}"`,
+      );
+    }
+
+    if (cleaned.icon !== undefined && typeof cleaned.icon !== "string") {
+      drop("icon", "Invalid icon (expected string)");
+    }
+
+    // Thresholds: keep only numeric tiers, then validate ordering against
+    // the effective values (base fallback for omitted tiers)
+    if (cleaned.thresholds !== undefined) {
+      const raw = cleaned.thresholds;
+      if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
+        const partial: Partial<Thresholds> = {};
+        for (const [tier, value] of Object.entries(raw)) {
+          if (typeof value === "number") {
+            partial[tier as TierName] = value;
+          } else {
+            errors.push(
+              `- ${prefix}: Invalid thresholds.${tier} "${value}" (expected number) — tier falls back to base.`,
+            );
+          }
+        }
+        const merged = { ...base.thresholds, ...partial };
+        const validOrder =
+          merged.slow < merged.medium &&
+          merged.medium < merged.fast &&
+          merged.fast < merged.blazing;
+        if (!validOrder) {
+          drop(
+            "thresholds",
+            `Thresholds must be in ascending order (effective: ${merged.slow} < ${merged.medium} < ${merged.fast} < ${merged.blazing})`,
+          );
+        } else if (Object.keys(partial).length > 0) {
+          cleaned.thresholds = partial;
+        } else {
+          delete cleaned.thresholds;
+        }
+      } else {
+        drop("thresholds", "Invalid thresholds (expected object)");
+      }
+    }
+
+    // Colors: keep only valid hex tiers, then drop the whole group if any
+    // effective color is invalid
+    if (cleaned.colors !== undefined) {
+      const raw = cleaned.colors;
+      if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
+        const partial: Partial<Colors> = {};
+        for (const [tier, value] of Object.entries(raw)) {
+          if (typeof value === "string" && Validator.isValidHex(value)) {
+            partial[tier as TierName] = value.toLowerCase();
+          } else {
+            errors.push(
+              `- ${prefix}: Invalid colors.${tier} "${value}" (expected hex like '#00ff88') — tier falls back to base.`,
+            );
+          }
+        }
+        const merged = { ...base.colors, ...partial };
+        const allValid = Object.values(merged).every((c) =>
+          Validator.isValidHex(c),
+        );
+        if (!allValid) {
+          drop("colors", "Effective colors must be valid hex strings");
+        } else if (Object.keys(partial).length > 0) {
+          cleaned.colors = partial;
+        } else {
+          delete cleaned.colors;
+        }
+      } else {
+        drop("colors", "Invalid colors (expected object)");
+      }
+    }
+
+    return { config: cleaned, errors };
   }
 
   /**

@@ -4,8 +4,10 @@ import {
   Container,
   getKeybindings,
   Input,
+  SelectList,
   Spacer,
   Text,
+  type SelectListTheme,
 } from "@earendil-works/pi-tui";
 
 /**
@@ -32,6 +34,16 @@ abstract class BaseDialog {
 
   protected inputFooter(): string {
     return `${this.hint("tui.select.confirm", "save")} • ${this.hint("tui.select.cancel", "cancel")}`;
+  }
+
+  protected selectListTheme(): SelectListTheme {
+    return {
+      selectedPrefix: (text) => this.theme.fg("accent", text),
+      selectedText: (text) => this.theme.fg("accent", text),
+      description: (text) => this.theme.fg("muted", text),
+      scrollInfo: (text) => this.theme.fg("dim", text),
+      noMatch: (text) => this.theme.fg("warning", text),
+    };
   }
 
   protected createFrame(
@@ -186,6 +198,81 @@ export type SubmenuOptions = Omit<
   InputDialogOptions,
   "theme" | "tui" | "onSubmit" | "onCancel"
 >;
+
+/**
+ * Framed confirmation dialog with a two-item SelectList (confirm/cancel).
+ * Used for destructive actions such as deleting a provider override.
+ */
+export class ConfirmDialog extends BaseDialog implements Component {
+  private readonly container: Container;
+  private readonly list: SelectList;
+  private isFocused = false;
+
+  constructor(private readonly options: ConfirmDialogOptions) {
+    super(options.theme, options.tui);
+
+    this.list = new SelectList(
+      [
+        { value: "confirm", label: options.confirmLabel ?? "Delete" },
+        { value: "cancel", label: options.cancelLabel ?? "Cancel" },
+      ],
+      2,
+      this.selectListTheme(),
+    );
+    this.list.onSelect = (item) => {
+      if (item.value === "confirm") options.onConfirm();
+      else options.onCancel();
+    };
+    this.list.onCancel = () => options.onCancel();
+
+    const body = new Container();
+    body.addChild(new Text(this.theme.fg("text", options.message), 1, 0));
+    body.addChild(new Spacer(1));
+    body.addChild(this.list);
+
+    this.container = this.createFrame(
+      options.title,
+      [body],
+      `${this.hint("tui.select.confirm", "confirm")} • ${this.hint("tui.select.cancel", "cancel")}`,
+    );
+  }
+
+  // -- Component -------------------------------------------------------------
+
+  invalidate(): void {
+    this.container.invalidate();
+  }
+
+  handleInput(data: string): void {
+    this.list.handleInput(data);
+    this.tui.requestRender();
+  }
+
+  render(width: number): string[] {
+    return this.container.render(width);
+  }
+
+  // -- Focusable ---------------------------------------------------------------
+
+  get focused(): boolean {
+    return this.isFocused;
+  }
+
+  set focused(value: boolean) {
+    this.isFocused = value;
+  }
+}
+
+export interface ConfirmDialogOptions {
+  theme: Theme;
+  tui: TUI;
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
 
 export interface InputDialogOptions {
   theme: Theme;

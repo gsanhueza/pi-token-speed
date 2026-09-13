@@ -63,6 +63,7 @@ export class EventManager {
     }
 
     this.engine.initialize();
+    this.engine.applyProvider(ctx.model?.provider);
     this.renderer.initialize(ctx);
     this.renderer.resetThrottle();
   }
@@ -102,6 +103,10 @@ export class EventManager {
       ev.type === "thinking_start" ||
       ev.type === "toolcall_start"
     ) {
+      // Pick up provider overrides (e.g. after a model switch) before the
+      // new stream starts; applyProvider is a no-op when unchanged or when
+      // a stream is already active.
+      this.engine.applyProvider(ctx.model?.provider);
       this.engine.stopTTFT();
       this.engine.start();
       return;

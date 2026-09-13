@@ -4,6 +4,9 @@ import { join } from "node:path";
 
 import type {
   Colors,
+  PartialConfig,
+  ProviderOverride,
+  ProviderOverrides,
   Thresholds,
   TierName,
   TokenSpeedConfig,
@@ -29,17 +32,6 @@ import {
 import { Validator } from "./validation";
 
 /**
- * Partial config where the nested groups may also be partially specified.
- * Used for merging user settings over defaults without wiping sibling tiers.
- */
-type PartialConfig = Partial<
-  Omit<TokenSpeedConfig, "thresholds" | "colors">
-> & {
-  thresholds?: Partial<Thresholds>;
-  colors?: Partial<Colors>;
-};
-
-/**
  * Legacy flat threshold keys → tier name (e.g. `tpsSlow` → `slow`).
  */
 const LEGACY_THRESHOLD_KEYS: Record<string, TierName> = {
@@ -59,6 +51,13 @@ const LEGACY_COLOR_KEYS: Record<string, TierName> = {
   colorBlazing: "blazing",
 };
 
+/**
+ * Type guard for plain objects (excludes arrays and null).
+ */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 const ALL_LEGACY_KEYS = [
   ...Object.keys(LEGACY_THRESHOLD_KEYS),
   ...Object.keys(LEGACY_COLOR_KEYS),
@@ -71,10 +70,13 @@ const ALL_LEGACY_KEYS = [
  * Delegates validation to the `Validator` utility class.
  *
  * Use the exported `settings` singleton — do not instantiate directly.
- *
- * Settings shape:
+ * * Settings shape:
  * - Thresholds and colors are stored as nested objects
  *   (`thresholds.slow`, `colors.fast`, …), all keys optional.
+ * - `providerOverrides` maps a pi ProviderId (e.g. "anthropic") to a
+ *   partial config applied when the active model's provider matches.
+ *   Blocks are stored verbatim (sanitized); resolution is lazy via
+ *   `getEffectiveConfig(providerId)`.
  * - Legacy flat keys (`tpsSlow`, `colorFast`, …) are still readable for
  *   backward compatibility, but the file is never rewritten at read time.
  *   They are stripped from the file on the next write, which only happens
@@ -123,6 +125,7 @@ export class Settings {
       endTpsBehavior: END_TPS_BEHAVIOR,
       icon: DEFAULT_ICON,
       updateInterval: UPDATE_INTERVAL,
+      providerOverrides: {},
     };
   }
 
@@ -149,11 +152,47 @@ export class Settings {
       { ...defaults, ...rest } as PartialConfig,
       converted,
     );
+
+    // Sanitize per-provider overrides: drop malformed entries and invalid
+    // keys (collecting prefixed warnings), keeping valid blocks verbatim so
+    // resolution via getEffectiveConfig() stays lazy.
+    const { overrides: providerOverrides, errors: overrideErrors } =
+      this.sanitizeProviderOverrides(raw, merged);
+    merged.providerOverrides = providerOverrides;
+
     const { config, errors } = Validator.validate(merged);
     this.cachedConfig = config;
-    this.cachedErrors = errors;
+    this.cachedErrors = [...errors, ...overrideErrors];
 
     return this.cachedConfig;
+  }
+
+  /**
+   * Returns the effective configuration for a provider: the base config
+   * merged with the provider's override block when one exists.
+   *
+   * Merge semantics (via `mergeConfig`): top-level keys present in the
+   * override replace the base value; `thresholds`/`colors` merge per-tier;
+   * omitted keys fall back to base.
+   *
+   * @param providerId The pi ProviderId (e.g. "anthropic"), or undefined
+   *   when no model is active — returns the base config.
+   */
+  getEffectiveConfig(providerId?: string): TokenSpeedConfig {
+    const base = this.getConfig();
+    if (!providerId) return base;
+    const override = base.providerOverrides[providerId];
+    if (!override) return base;
+    return Settings.mergeConfig(base, override as PartialConfig);
+  }
+
+  /**
+   * Replaces the whole `providerOverrides` map and updates the cache.
+   * Used by the `/tps overrides` editor, whose add/delete semantics are
+   * map-level rather than per-key.
+   */
+  async setProviderOverrides(next: ProviderOverrides): Promise<void> {
+    await this.setConfig({ providerOverrides: next });
   }
 
   /**
@@ -259,6 +298,49 @@ export class Settings {
   }
 
   /**
+   * Sanitizes the raw `providerOverrides` value: keeps valid provider →
+   * partial-config entries (with invalid keys dropped and warned about),
+   * drops malformed entries entirely.
+   *
+   * @param raw The raw tokenSpeed settings block.
+   * @param base The merged base config (defaults + user base settings),
+   *   used as the fallback when validating per-tier groups.
+   */
+  private sanitizeProviderOverrides(
+    raw: Record<string, unknown>,
+    base: TokenSpeedConfig,
+  ): { overrides: ProviderOverrides; errors: string[] } {
+    const overrides: ProviderOverrides = {};
+    const errors: string[] = [];
+
+    const rawValue = raw.providerOverrides;
+    if (rawValue === undefined) return { overrides, errors };
+
+    if (!isPlainObject(rawValue)) {
+      errors.push("- providerOverrides must be an object — ignoring.");
+      return { overrides, errors };
+    }
+
+    for (const [providerId, block] of Object.entries(rawValue)) {
+      if (!isPlainObject(block)) {
+        errors.push(
+          `- providerOverrides["${providerId}"] must be an object — entry ignored.`,
+        );
+        continue;
+      }
+      const { config, errors: blockErrors } = Validator.validateOverride(
+        providerId,
+        block as ProviderOverride,
+        base,
+      );
+      errors.push(...blockErrors);
+      overrides[providerId] = config;
+    }
+
+    return { overrides, errors };
+  }
+
+  /**
    * Reads and parses the settings file, returning an empty object on failure.
    */
   private async readSettings(): Promise<Record<string, unknown>> {
@@ -329,6 +411,9 @@ export class Settings {
     }
     if (Object.keys(block.colors ?? {}).length === 0) {
       delete block.colors;
+    }
+    if (Object.keys(block.providerOverrides ?? {}).length === 0) {
+      delete block.providerOverrides;
     }
 
     if (Object.keys(block).length > 0) {

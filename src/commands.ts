@@ -4,6 +4,7 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import { getSettingsListTheme } from "@earendil-works/pi-coding-agent";
 import {
+  AutocompleteItem,
   SettingsList,
   type SettingItem,
   type TUI,
@@ -23,6 +24,7 @@ import {
   UPDATE_INTERVAL_LABEL,
   UPDATE_INTERVAL_LABELS,
 } from "./options";
+import { OverridesEditor } from "./override-editor";
 import type { Renderer } from "./renderer";
 import { settings } from "./settings";
 import { buildThresholdSettingsItems } from "./threshold-picker";
@@ -59,12 +61,56 @@ export class CommandManager {
   ) {}
 
   /**
-   * Handles the `/tps` command — opens a SettingsList to configure
-   * display mode, token counting, timing, icon, sliding window, and colors.
+   * Argument completions for the `/tps` command.
+   *
+   * @param prefix Prefix written by the user
+   * @returns Completions with that prefix
+   */
+  getArgumentCompletions(prefix: string): AutocompleteItem[] | null {
+    const completions: AutocompleteItem[] = [
+      {
+        value: "overrides",
+        label: "overrides",
+        description: "Manage per-provider overrides",
+      },
+    ];
+    const filtered = completions.filter((a) => a.value.startsWith(prefix));
+    return filtered.length > 0 ? filtered : null;
+  }
+
+  /**
+   * Handles the `/tps` command.
+   *
+   * - No arguments: opens a SettingsList to configure display mode, token
+   *   counting, timing, icon, sliding window, and colors (base config).
+   * - `overrides`: opens the per-provider overrides editor.
+   *
+   * @param args Command arguments
+   * @param ctx The context used by Pi
+   */
+  async runTps(args: string, ctx: ExtensionCommandContext): Promise<void> {
+    if (args === "overrides") {
+      await this.runOverridesEditor(ctx);
+      return;
+    }
+
+    if (args === "") {
+      await this.runSettingsMenu(ctx);
+      return;
+    }
+
+    ctx.ui.notify(
+      `Unknown argument "${args}" — usage: /tps [overrides]`,
+      "warning",
+    );
+  }
+
+  /**
+   * Runs the base settings menu (unchanged behavior).
    *
    * @param ctx The context used by Pi
    */
-  async runTps(ctx: ExtensionCommandContext): Promise<void> {
+  private async runSettingsMenu(ctx: ExtensionCommandContext): Promise<void> {
     const config = settings.getConfig();
 
     await ctx.ui.custom<void>((tui, theme, _kb, done) => {
@@ -79,6 +125,58 @@ export class CommandManager {
       );
       return this.settingsList;
     });
+  }
+
+  /**
+   * Runs the interactive per-provider overrides editor for
+   * `tokenSpeed.providerOverrides`: a SettingsList of providers (add with
+   * `a`, delete with `d` after confirmation), drilling down into each
+   * provider's override block (one row per overridable field, `(base)`
+   * when unset).
+   *
+   * Modeled after pi-llama-cpp's `/models overrides`.
+   *
+   * Writes replace the whole map via `settings.setProviderOverrides()`;
+   * write errors are notified and the values are kept unchanged. After
+   * closing, the engine re-applies the current provider's effective config
+   * so changes take effect immediately (engine-side fields at the next
+   * stream start).
+   *
+   * @param ctx The context used by Pi
+   */
+  private async runOverridesEditor(
+    ctx: ExtensionCommandContext,
+  ): Promise<void> {
+    if (ctx.mode !== "tui") {
+      ctx.ui.notify(
+        "/tps overrides requires an interactive session (TUI)",
+        "warning",
+      );
+      return;
+    }
+
+    const overrides = settings.getConfig().providerOverrides;
+    await ctx.ui.custom<void>(
+      (tui, theme, keybindings, done) =>
+        new OverridesEditor({
+          tui,
+          theme,
+          keybindings,
+          overrides: { ...overrides },
+          persist: (next) => settings.setProviderOverrides(next),
+          done: () => {
+            done(undefined);
+            // Re-apply the current provider's effective config so changes
+            // take effect immediately (initialize resets the provider, so
+            // applyProvider is not short-circuited by the unchanged guard)
+            this.engine.initialize();
+            this.engine.applyProvider(ctx.model?.provider);
+            this.renderer.update(ctx);
+          },
+          onError: (message) => ctx.ui.notify(message, "error"),
+          onWarning: (message) => ctx.ui.notify(message, "warning"),
+        }),
+    );
   }
 
   /**

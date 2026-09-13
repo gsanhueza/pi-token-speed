@@ -20,7 +20,9 @@ export default async (pi: ExtensionAPI) => {
   pi.registerCommand("tps", {
     description:
       "Open settings menu to configure pi-token-speed options",
-    handler: (_, ctx: ExtensionCommandContext) => commands.runTps(ctx),
+    getArgumentCompletions: (prefix) => commands.getArgumentCompletions(prefix),
+    handler: (args: string, ctx: ExtensionCommandContext) =>
+      commands.runTps(args, ctx),
   });
 
   // Session lifecycle

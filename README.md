@@ -10,6 +10,7 @@ A [Pi Coding Agent](https://pi.dev/) extension that displays real-time **tokens-
 - **Color-coded speed indicators** — visual feedback based on performance thresholds
 - **Configurable update interval** — throttle status bar updates to reduce visual flickering
 - **Provider-reported counting** — opt in to using provider-reported counts (e.g. Anthropic, OpenAI) instead of the extension's own counter
+- **Per-provider overrides** — different thresholds, display mode, etc. per provider (e.g. `anthropic` vs `openai`)
 - **Fully configurable** — customize display, thresholds and colors via `~/.pi/agent/settings.json`
 
 ## Speed Tiers
@@ -67,6 +68,48 @@ You can customize the display, speed thresholds and colors by adding a `tokenSpe
 
 All keys are optional. If you're still using the old flat keys (`tpsSlow`, `colorFast`, …), see [Legacy Configuration](#legacy-configuration).
 
+### Provider Overrides
+
+Different providers stream at very different speeds and report tokens differently. The optional `providerOverrides` key lets you define per-provider configuration blocks with the exact same schema as the base config, applied whenever the active model's provider matches:
+
+```json
+{
+  "tokenSpeed": {
+    "thresholds": {
+      "slow": 0,
+      "medium": 15,
+      "fast": 30,
+      "blazing": 45
+    },
+    "display": "tps",
+    "useProviderTokens": false,
+    "countStrategy": "direct",
+    "providerOverrides": {
+      "anthropic": {
+        "thresholds": {
+          "slow": 0,
+          "medium": 30,
+          "fast": 60,
+          "blazing": 90
+        },
+        "display": "ttft",
+        "useProviderTokens": true,
+        "countStrategy": "estimate"
+      }
+    }
+  }
+}
+```
+
+Keys are matched against the model's provider id (e.g. `anthropic`, `openai`, `google`, `github-copilot`). Override blocks may be **partial**: any key you omit falls back to the base config, and `thresholds`/`colors` merge per-tier (an override specifying only `thresholds.fast` doesn't wipe the sibling tiers). Invalid keys are dropped with a warning at session start, falling back to base.
+
+Resolution timing per key group:
+
+- **Renderer-side** keys (`display`, `icon`, `thresholds`, `colors`, `updateInterval`) apply as soon as the provider changes.
+- **Engine-side** keys (`slidingWindow`, `useProviderTokens`, `countStrategy`, `endTpsBehavior`) apply at the next stream start, so the current measurement is never skewed mid-stream.
+
+You can also manage overrides interactively with `/tps overrides` (see [Commands](#commands)).
+
 ### Configuration Validation
 
 Invalid configuration values are automatically corrected to their defaults. A warning notification is displayed in the Pi status bar at session start listing any corrections made. The `slidingWindow` value is also clamped between `100ms` and `30000ms` (30s).
@@ -94,23 +137,24 @@ These keys are still honored, so your configuration keeps working as-is. However
 
 ### Configuration Options
 
-| Option               | Type                           | Default     | Description                                                      |
-| -------------------- | ------------------------------ | ----------- | ---------------------------------------------------------------- |
-| `thresholds.slow`    | number                         | `0`         | Minimum TPS threshold ("slow")                                   |
-| `thresholds.medium`  | number                         | `15`        | TPS above this is "medium"                                       |
-| `thresholds.fast`    | number                         | `30`        | TPS above this is "fast"                                         |
-| `thresholds.blazing` | number                         | `45`        | TPS above this is "blazing"                                      |
-| `colors.slow`        | string                         | `"#ff4444"` | Color for slow tier                                              |
-| `colors.medium`      | string                         | `"#ffaa00"` | Color for medium tier                                            |
-| `colors.fast`        | string                         | `"#00ff88"` | Color for fast tier                                              |
-| `colors.blazing`     | string                         | `"#44ddff"` | Color for blazing tier                                           |
-| `slidingWindow`      | number                         | `1000`      | Sliding window duration in ms                                    |
-| `display`            | `tps`, `ttft`, `stats`, `full` | `tps`       | Display mode (see [Display Modes](#display-modes))               |
-| `useProviderTokens`  | boolean                        | `false`     | Opt-in: use provider-reported count instead of the extension one |
-| `countStrategy`      | `estimate`, `direct`           | `direct`    | Token counting strategy used by the extension's own counter      |
-| `endTpsBehavior`     | `average`, `last`              | `average`   | What to show after streaming ends                                |
-| `icon`               | string                         | `"⚡"`      | Icon shown before TPS in the status bar                          |
-| `updateInterval`     | number                         | `0`         | Status bar update interval in ms (0 = every delta)               |
+| Option               | Type                           | Default     | Description                                                                   |
+| -------------------- | ------------------------------ | ----------- | ----------------------------------------------------------------------------- |
+| `thresholds.slow`    | number                         | `0`         | Minimum TPS threshold ("slow")                                                |
+| `thresholds.medium`  | number                         | `15`        | TPS above this is "medium"                                                    |
+| `thresholds.fast`    | number                         | `30`        | TPS above this is "fast"                                                      |
+| `thresholds.blazing` | number                         | `45`        | TPS above this is "blazing"                                                   |
+| `colors.slow`        | string                         | `"#ff4444"` | Color for slow tier                                                           |
+| `colors.medium`      | string                         | `"#ffaa00"` | Color for medium tier                                                         |
+| `colors.fast`        | string                         | `"#00ff88"` | Color for fast tier                                                           |
+| `colors.blazing`     | string                         | `"#44ddff"` | Color for blazing tier                                                        |
+| `slidingWindow`      | number                         | `1000`      | Sliding window duration in ms                                                 |
+| `display`            | `tps`, `ttft`, `stats`, `full` | `tps`       | Display mode (see [Display Modes](#display-modes))                            |
+| `useProviderTokens`  | boolean                        | `false`     | Opt-in: use provider-reported count instead of the extension one              |
+| `countStrategy`      | `estimate`, `direct`           | `direct`    | Token counting strategy used by the extension's own counter                   |
+| `endTpsBehavior`     | `average`, `last`              | `average`   | What to show after streaming ends                                             |
+| `icon`               | string                         | `"⚡"`      | Icon shown before TPS in the status bar                                       |
+| `updateInterval`     | number                         | `0`         | Status bar update interval in ms (0 = every delta)                            |
+| `providerOverrides`  | object                         | `{}`        | Per-provider config overrides (see [Provider Overrides](#provider-overrides)) |
 
 ### Interactive Menu
 
@@ -125,6 +169,8 @@ A small interactive menu is available when running `/tps` in the editor, where y
 - **End-of-stream TPS** — what to show after streaming ends (`average` or `last`)
 - **Thresholds** — customize the TPS threshold values for each tier (see [Threshold Customization](#threshold-customization))
 - **Colors** — customize the hex color for each TPS tier (see [Color Customization](#color-customization))
+
+Per-provider overrides are managed separately via `/tps overrides` (see [Provider Overrides](#provider-overrides)).
 
 ### Sliding Window
 
@@ -289,6 +335,11 @@ The `/tps` command offers `⚡`, `🔥`, `💨`, `🚀` and none. You can also s
 | Command | Description                                                                                   |
 | ------- | --------------------------------------------------------------------------------------------- |
 | `/tps`  | Open settings menu to configure available options (see [Interactive Menu](#interactive-menu)) |
+
+| Command          | Description                                                                                                                                                                         |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/tps`           | Open settings menu to configure available options (see [Interactive Menu](#interactive-menu))                                                                                       |
+| `/tps overrides` | Manage per-provider overrides: add (`a`) or delete (`d`) providers, edit their override blocks. Unset fields show `(base)`; resetting a field to `(base)` removes it from the block |
 
 ## How It Works
 

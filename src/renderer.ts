@@ -46,7 +46,7 @@ export class Renderer {
    * @param ctx The context used by Pi.
    */
   private render(ctx: ExtensionContext): void {
-    const config = settings.getConfig();
+    const config = settings.getEffectiveConfig(ctx.model?.provider);
     const theme = ctx.ui.theme;
 
     // Render TPS first
@@ -142,7 +142,7 @@ export class Renderer {
    */
   initialize(ctx: ExtensionContext): void {
     const theme = ctx.ui.theme;
-    const config = settings.getConfig();
+    const config = settings.getEffectiveConfig(ctx.model?.provider);
     const icon = config.icon ? `${config.icon} ` : "";
     const prefix = theme.fg("dim", `${icon}TPS:`);
     const text = `${prefix} --`;

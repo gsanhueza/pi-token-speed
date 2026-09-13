@@ -25,6 +25,7 @@ export class TokenSpeedEngine {
   private _useProviderTokens!: boolean;
   private _countStrategy!: CountStrategy;
   private _endTpsBehavior!: EndTpsBehavior;
+  private _providerId: string | undefined;
 
   /**
    * Loads configuration.
@@ -32,6 +33,30 @@ export class TokenSpeedEngine {
    */
   initialize(): void {
     const config = settings.getConfig();
+    this._providerId = undefined;
+    this._slidingWindow = new SlidingWindow(config.slidingWindow);
+    this._countStrategy = config.countStrategy;
+    this._useProviderTokens = config.useProviderTokens;
+    this._endTpsBehavior = config.endTpsBehavior;
+  }
+
+  /**
+   * Re-applies provider-dependent configuration for the given provider.
+   *
+   * Resolves the effective config (base + provider override block) and
+   * refreshes the engine-side fields (slidingWindow, useProviderTokens,
+   * countStrategy, endTpsBehavior). A no-op when the provider is unchanged
+   * or when a stream is active — mid-stream switches are picked up at the
+   * next stream start instead, so the sliding window is never reset while
+   * a stream is in flight.
+   *
+   * @param providerId The pi ProviderId (e.g. "anthropic"), or undefined
+   *   when no model is active (base config applies).
+   */
+  applyProvider(providerId?: string): void {
+    if (providerId === this._providerId || this._isStreaming) return;
+    const config = settings.getEffectiveConfig(providerId);
+    this._providerId = providerId;
     this._slidingWindow = new SlidingWindow(config.slidingWindow);
     this._countStrategy = config.countStrategy;
     this._useProviderTokens = config.useProviderTokens;

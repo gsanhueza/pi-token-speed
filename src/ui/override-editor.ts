@@ -7,8 +7,6 @@ import type {
   TUI,
 } from "@earendil-works/pi-tui";
 import { SettingsList, type SettingItem } from "@earendil-works/pi-tui";
-import { HexColorInput } from "./color-input";
-import { coloredBlock } from "./color-picker";
 import type {
   CountStrategy,
   DisplayMode,
@@ -17,8 +15,7 @@ import type {
   ProviderOverrides,
   Thresholds,
   TierName,
-} from "./config-types";
-import { ConfirmDialog, InputDialog } from "./dialog";
+} from "../config/config-types";
 import {
   COUNT_STRATEGY_LABELS,
   DISPLAY_LABELS,
@@ -27,9 +24,12 @@ import {
   SLIDING_WINDOW_LABELS,
   TOGGLE_LABELS,
   UPDATE_INTERVAL_LABELS,
-} from "./options";
-import { settings } from "./settings";
-import { Validator } from "./validation";
+} from "../config/options";
+import { settings } from "../config/settings";
+import { Validator } from "../config/validation";
+import { HexColorInput } from "./color-input";
+import { coloredBlock } from "./color-picker";
+import { ConfirmDialog, InputDialog } from "./dialog";
 
 /**
  * `/tps overrides` editor — manages the `providerOverrides` map.
@@ -70,7 +70,7 @@ const TIERS: { key: TierName; label: string }[] = [
 ];
 
 /** Shared editor options, mirroring pi-llama-cpp's OverrideSettingsListOptions. */
-export interface OverridesEditorOptions {
+interface OverridesEditorOptions {
   tui: TUI;
   theme: Theme;
   keybindings: KeybindingsManager;
@@ -124,7 +124,7 @@ const persistNext = async (
  * Formats a block as the summary shown in the provider rows.
  * Only explicitly-set keys appear; `—` when the block is empty.
  */
-export const formatOverrideSummary = (block: ProviderOverride): string => {
+const formatOverrideSummary = (block: ProviderOverride): string => {
   const parts: string[] = [];
   if (block.display !== undefined)
     parts.push(`display: ${DISPLAY_LABELS[block.display]}`);

@@ -1,23 +1,8 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import type { SettingItem, TUI } from "@earendil-works/pi-tui";
-import type { TierName } from "./config-types";
+import { TIERS } from "../config/options";
+import { settings } from "../config/settings";
 import { InputDialog } from "./dialog";
-import { settings } from "./settings";
-
-/**
- * Threshold tier metadata.
- */
-interface ThresholdTier {
-  key: TierName;
-  label: string;
-}
-
-const THRESHOLD_TIERS: ThresholdTier[] = [
-  { key: "slow", label: "Slow" },
-  { key: "medium", label: "Medium" },
-  { key: "fast", label: "Fast" },
-  { key: "blazing", label: "Blazing" },
-];
 
 /**
  * Builds the SettingsList items for the TPS threshold customization submenu.
@@ -34,7 +19,7 @@ export const buildThresholdSettingsItems = (
 ): SettingItem[] => {
   const config = settings.getConfig();
 
-  return THRESHOLD_TIERS.map((tier) => ({
+  return TIERS.map((tier) => ({
     id: `thresholds.${tier.key}`,
     label: `${tier.label}`,
     description: `TPS threshold for the ${tier.label.toLowerCase()} tier`,

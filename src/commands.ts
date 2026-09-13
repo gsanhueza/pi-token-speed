@@ -9,9 +9,7 @@ import {
   type SettingItem,
   type TUI,
 } from "@earendil-works/pi-tui";
-import { buildColorSettingsItems, coloredBlock } from "./color-picker";
-import type { TierName, TokenSpeedConfig } from "./config-types";
-import { TokenSpeedEngine } from "./engine";
+import type { TierName, TokenSpeedConfig } from "./config/config-types";
 import {
   COUNT_STRATEGY_LABELS,
   DISPLAY_LABELS,
@@ -20,15 +18,18 @@ import {
   ICONS,
   SLIDING_WINDOW_LABEL,
   SLIDING_WINDOW_LABELS,
+  TIERS,
   TOGGLE_LABELS,
   UPDATE_INTERVAL_LABEL,
   UPDATE_INTERVAL_LABELS,
-} from "./options";
-import { OverridesEditor } from "./override-editor";
-import type { Renderer } from "./renderer";
-import { settings } from "./settings";
-import { buildThresholdSettingsItems } from "./threshold-picker";
-import { Validator } from "./validation";
+} from "./config/options";
+import { settings } from "./config/settings";
+import { Validator } from "./config/validation";
+import { TokenSpeedEngine } from "./core/engine";
+import { buildColorSettingsItems, coloredBlock } from "./ui/color-picker";
+import { OverridesEditor } from "./ui/override-editor";
+import type { Renderer } from "./ui/renderer";
+import { buildThresholdSettingsItems } from "./ui/threshold-picker";
 
 /**
  * Configuration options
@@ -50,9 +51,7 @@ enum Options {
  */
 export class CommandManager {
   private settingsList: SettingsList | null = null;
-  private colorSubmenuList: SettingsList | null = null;
   private colorSubmenuItems: SettingItem[] | null = null;
-  private thresholdSubmenuList: SettingsList | null = null;
   private thresholdSubmenuItems: SettingItem[] | null = null;
 
   constructor(
@@ -280,6 +279,32 @@ export class CommandManager {
   }
 
   /**
+   * Creates the SettingsList for a tier-customization submenu
+   * (thresholds or colors). Changes are routed back through
+   * `handleSettingChange` so persistence and refreshes stay centralized.
+   *
+   * @param items The settings items to display
+   * @param ctx The command context (for `handleSettingChange`)
+   * @param onClose Callback when the dialog closes
+   * @returns The configured SettingsList instance
+   */
+  private createSubmenuList(
+    items: SettingItem[],
+    ctx: ExtensionCommandContext,
+    done: (value?: string) => void,
+  ): SettingsList {
+    return new SettingsList(
+      items,
+      Math.min(items.length + 2, 15),
+      getSettingsListTheme(),
+      (id, newValue) => {
+        this.handleSettingChange(id, newValue, ctx);
+      },
+      () => done(undefined),
+    );
+  }
+
+  /**
    * Refreshes the SettingsList items after a threshold change.
    * Updates both the main menu's Thresholds entry and the
    * submenu's threshold rows so currentValue reflects
@@ -288,7 +313,7 @@ export class CommandManager {
   private refreshThresholdItems(): void {
     const config = settings.getConfig();
     const { thresholds } = config;
-    const allThresholds = `${thresholds.slow} | ${thresholds.medium} | ${thresholds.fast} | ${thresholds.blazing}`;
+    const allThresholds = TIERS.map(({ key }) => thresholds[key]).join(" | ");
 
     // Update main menu's Thresholds entry
     if (this.settingsList) {
@@ -297,17 +322,12 @@ export class CommandManager {
 
     // Update submenu's threshold rows
     if (this.thresholdSubmenuItems) {
-      const thresholdMap: Record<string, string> = {
-        "thresholds.slow": thresholds.slow.toString(),
-        "thresholds.medium": thresholds.medium.toString(),
-        "thresholds.fast": thresholds.fast.toString(),
-        "thresholds.blazing": thresholds.blazing.toString(),
-      };
-
-      for (const [id, value] of Object.entries(thresholdMap)) {
-        const item = this.thresholdSubmenuItems.find((i) => i.id === id);
+      for (const { key } of TIERS) {
+        const item = this.thresholdSubmenuItems.find(
+          (i) => i.id === `thresholds.${key}`,
+        );
         if (item) {
-          item.currentValue = value;
+          item.currentValue = thresholds[key].toString();
         }
       }
     }
@@ -322,11 +342,9 @@ export class CommandManager {
   private refreshColorItems(): void {
     const config = settings.getConfig();
     const { colors } = config;
-    const slow = `${coloredBlock(colors.slow)}`;
-    const medium = `${coloredBlock(colors.medium)}`;
-    const fast = `${coloredBlock(colors.fast)}`;
-    const blazing = `${coloredBlock(colors.blazing)}`;
-    const allColors = `${slow} ${medium} ${fast} ${blazing}`;
+    const allColors = TIERS.map(({ key }) => coloredBlock(colors[key])).join(
+      " ",
+    );
 
     // Update main menu's Colors entry
     if (this.settingsList) {
@@ -337,17 +355,12 @@ export class CommandManager {
     // - label gets the colored block + tier name
     // - currentValue stays as the hex string
     if (this.colorSubmenuItems) {
-      const colorMap: Record<string, { block: string; tier: string }> = {
-        "colors.slow": { block: slow, tier: "Slow" },
-        "colors.medium": { block: medium, tier: "Medium" },
-        "colors.fast": { block: fast, tier: "Fast" },
-        "colors.blazing": { block: blazing, tier: "Blazing" },
-      };
-
-      for (const [id, { block, tier }] of Object.entries(colorMap)) {
-        const item = this.colorSubmenuItems.find((i) => i.id === id);
+      for (const { key, label } of TIERS) {
+        const item = this.colorSubmenuItems.find(
+          (i) => i.id === `colors.${key}`,
+        );
         if (item) {
-          item.label = `${block} ${tier}`;
+          item.label = `${coloredBlock(colors[key])} ${label}`;
         }
       }
     }
@@ -380,8 +393,12 @@ export class CommandManager {
       thresholds,
     } = config;
 
-    const colorsDisplay = `${coloredBlock(colors.slow)} ${coloredBlock(colors.medium)} ${coloredBlock(colors.fast)} ${coloredBlock(colors.blazing)}`;
-    const thresholdsDisplay = `${thresholds.slow} | ${thresholds.medium} | ${thresholds.fast} | ${thresholds.blazing}`;
+    const colorsDisplay = TIERS.map(({ key }) =>
+      coloredBlock(colors[key]),
+    ).join(" ");
+    const thresholdsDisplay = TIERS.map(({ key }) => thresholds[key]).join(
+      " | ",
+    );
 
     return [
       // Display-related settings
@@ -454,16 +471,7 @@ export class CommandManager {
         submenu: (_currentValue: string, done: (value?: string) => void) => {
           const items = buildThresholdSettingsItems(theme, tui);
           this.thresholdSubmenuItems = items;
-          this.thresholdSubmenuList = new SettingsList(
-            items,
-            Math.min(items.length + 2, 15),
-            getSettingsListTheme(),
-            (id, newValue) => {
-              this.handleSettingChange(id, newValue, ctx);
-            },
-            () => done(undefined),
-          );
-          return this.thresholdSubmenuList;
+          return this.createSubmenuList(items, ctx, done);
         },
       },
       {
@@ -474,16 +482,7 @@ export class CommandManager {
         submenu: (_currentValue: string, done: (value?: string) => void) => {
           const items = buildColorSettingsItems(theme, tui);
           this.colorSubmenuItems = items;
-          this.colorSubmenuList = new SettingsList(
-            items,
-            Math.min(items.length + 2, 15),
-            getSettingsListTheme(),
-            (id, newValue) => {
-              this.handleSettingChange(id, newValue, ctx);
-            },
-            () => done(undefined),
-          );
-          return this.colorSubmenuList;
+          return this.createSubmenuList(items, ctx, done);
         },
       },
     ];

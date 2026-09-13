@@ -70,7 +70,8 @@ const ALL_LEGACY_KEYS = [
  * Delegates validation to the `Validator` utility class.
  *
  * Use the exported `settings` singleton — do not instantiate directly.
- * * Settings shape:
+ *
+ * Settings shape:
  * - Thresholds and colors are stored as nested objects
  *   (`thresholds.slow`, `colors.fast`, …), all keys optional.
  * - `providerOverrides` maps a pi ProviderId (e.g. "anthropic") to a
@@ -87,7 +88,7 @@ const ALL_LEGACY_KEYS = [
  * - Toolcall deltas (edit/write): Counted as 1 token (direct) or estimated from content (estimate)
  * - Other toolcalls: Not counted (prompt processing, not relevant)
  */
-export class Settings {
+class Settings {
   private cachedConfig: TokenSpeedConfig | null = null;
   private cachedErrors: string[] = [];
   private legacyKeys: string[] = [];
@@ -139,14 +140,7 @@ export class Settings {
     // Detect and convert legacy keys in memory only — the file is
     // untouched until the next write (which only happens via /tps).
     this.legacyKeys = ALL_LEGACY_KEYS.filter((key) => raw[key] !== undefined);
-    const converted = this.convertLegacyKeys(raw);
-
-    // Keep the non-legacy, non-nested-group keys as-is; the nested groups
-    // are re-added sanitized (legacy values converted, new keys winning).
-    const rest: Record<string, unknown> = { ...raw };
-    for (const key of ["thresholds", "colors", ...ALL_LEGACY_KEYS]) {
-      delete rest[key];
-    }
+    const { converted, rest } = this.splitLegacy(raw);
 
     const merged = Settings.mergeConfig(
       { ...defaults, ...rest } as PartialConfig,
@@ -246,6 +240,23 @@ export class Settings {
       thresholds: { ...base.thresholds, ...partial.thresholds },
       colors: { ...base.colors, ...partial.colors },
     } as TokenSpeedConfig;
+  }
+
+  /**
+   * Splits a raw settings block into converted legacy values (nested
+   * `thresholds`/`colors` partials, new-format keys winning) and the
+   * remainder with the nested groups and every legacy key removed.
+   */
+  private splitLegacy(block: Record<string, unknown>): {
+    converted: { thresholds?: Partial<Thresholds>; colors?: Partial<Colors> };
+    rest: Record<string, unknown>;
+  } {
+    const converted = this.convertLegacyKeys(block);
+    const rest: Record<string, unknown> = { ...block };
+    for (const key of ["thresholds", "colors", ...ALL_LEGACY_KEYS]) {
+      delete rest[key];
+    }
+    return { converted, rest };
   }
 
   /**
@@ -388,11 +399,7 @@ export class Settings {
 
     // Convert any legacy keys on disk into the nested format (new keys
     // winning), so stripping them below never loses stored values.
-    const converted = this.convertLegacyKeys(raw);
-    const rest: Record<string, unknown> = { ...raw };
-    for (const key of ["thresholds", "colors", ...ALL_LEGACY_KEYS]) {
-      delete rest[key];
-    }
+    const { converted, rest } = this.splitLegacy(raw);
 
     // Only explicitly-set values are persisted: the nested groups come from
     // converted legacy keys (explicit in a previous format) merged per-tier

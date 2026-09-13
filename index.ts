@@ -6,9 +6,9 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 
 import { CommandManager } from "./src/commands";
-import { TokenSpeedEngine } from "./src/engine";
-import { EventManager } from "./src/events";
-import { Renderer } from "./src/renderer";
+import { TokenSpeedEngine } from "./src/core/engine";
+import { EventManager } from "./src/core/events";
+import { Renderer } from "./src/ui/renderer";
 
 export default async (pi: ExtensionAPI) => {
   const engine = new TokenSpeedEngine();
@@ -18,8 +18,7 @@ export default async (pi: ExtensionAPI) => {
 
   // Command registration
   pi.registerCommand("tps", {
-    description:
-      "Open settings menu to configure pi-token-speed options",
+    description: "Open settings menu to configure pi-token-speed options",
     getArgumentCompletions: (prefix) => commands.getArgumentCompletions(prefix),
     handler: (args: string, ctx: ExtensionCommandContext) =>
       commands.runTps(args, ctx),

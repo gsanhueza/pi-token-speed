@@ -1,5 +1,5 @@
 import { Input, visibleWidth } from "@earendil-works/pi-tui";
-import { Validator } from "./validation";
+import { Validator } from "../config/validation";
 
 /**
  * Single-line input that live-previews hex color values: the moment the

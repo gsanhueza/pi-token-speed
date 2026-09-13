@@ -1,5 +1,9 @@
-import type { CountStrategy, EndTpsBehavior } from "./config-types";
-import { settings } from "./settings";
+import type {
+  CountStrategy,
+  EndTpsBehavior,
+  TokenSpeedConfig,
+} from "../config/config-types";
+import { settings } from "../config/settings";
 import { SlidingWindow } from "./sliding-window";
 
 const TOKEN_REGEX = /\w+|[^\s\w]/g;
@@ -32,12 +36,8 @@ export class TokenSpeedEngine {
    * Must be called after `settings.initialize()`.
    */
   initialize(): void {
-    const config = settings.getConfig();
     this._providerId = undefined;
-    this._slidingWindow = new SlidingWindow(config.slidingWindow);
-    this._countStrategy = config.countStrategy;
-    this._useProviderTokens = config.useProviderTokens;
-    this._endTpsBehavior = config.endTpsBehavior;
+    this.applyConfig(settings.getConfig());
   }
 
   /**
@@ -55,8 +55,16 @@ export class TokenSpeedEngine {
    */
   applyProvider(providerId?: string): void {
     if (providerId === this._providerId || this._isStreaming) return;
-    const config = settings.getEffectiveConfig(providerId);
     this._providerId = providerId;
+    this.applyConfig(settings.getEffectiveConfig(providerId));
+  }
+
+  /**
+   * Applies engine-side fields from a resolved config (fresh sliding
+   * window, counting strategy, provider-token usage, end-of-stream
+   * behavior). Shared by `initialize` and `applyProvider`.
+   */
+  private applyConfig(config: TokenSpeedConfig): void {
     this._slidingWindow = new SlidingWindow(config.slidingWindow);
     this._countStrategy = config.countStrategy;
     this._useProviderTokens = config.useProviderTokens;

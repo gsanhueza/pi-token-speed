@@ -43,7 +43,7 @@ export interface Colors {
  * Kept separate so provider override blocks can be a simple partial of
  * this shape without recursive type references.
  */
-export interface TokenSpeedConfigFields {
+interface TokenSpeedConfigFields {
   display: DisplayMode;
   slidingWindow: number;
   useProviderTokens: boolean;

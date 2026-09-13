@@ -1,4 +1,4 @@
-import { COMPACTION_THRESHOLD, MIN_SLIDING_WINDOW } from "./constants";
+import { COMPACTION_THRESHOLD, MIN_SLIDING_WINDOW } from "../config/constants";
 
 /**
  * Time-based sliding window for calculating tokens-per-second.

@@ -2,7 +2,18 @@ import type {
   CountStrategy,
   DisplayMode,
   EndTpsBehavior,
+  TierName,
 } from "./config-types";
+
+/**
+ * Tier metadata (key + label) shared by the threshold and color groups.
+ */
+export const TIERS: { key: TierName; label: string }[] = [
+  { key: "slow", label: "Slow" },
+  { key: "medium", label: "Medium" },
+  { key: "fast", label: "Fast" },
+  { key: "blazing", label: "Blazing" },
+];
 
 /**
  * Human-readable labels for display mode values.

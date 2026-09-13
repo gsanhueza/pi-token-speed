@@ -194,7 +194,7 @@ export class InputDialog extends BaseDialog {
  * Theme/TUI are passed separately; submit/cancel are wired to the
  * submenu's `done` callback.
  */
-export type SubmenuOptions = Omit<
+type SubmenuOptions = Omit<
   InputDialogOptions,
   "theme" | "tui" | "onSubmit" | "onCancel"
 >;
@@ -208,7 +208,7 @@ export class ConfirmDialog extends BaseDialog implements Component {
   private readonly list: SelectList;
   private isFocused = false;
 
-  constructor(private readonly options: ConfirmDialogOptions) {
+  constructor(options: ConfirmDialogOptions) {
     super(options.theme, options.tui);
 
     this.list = new SelectList(
@@ -263,7 +263,7 @@ export class ConfirmDialog extends BaseDialog implements Component {
   }
 }
 
-export interface ConfirmDialogOptions {
+interface ConfirmDialogOptions {
   theme: Theme;
   tui: TUI;
   title: string;
@@ -274,7 +274,7 @@ export interface ConfirmDialogOptions {
   onCancel: () => void;
 }
 
-export interface InputDialogOptions {
+interface InputDialogOptions {
   theme: Theme;
   tui: TUI;
   title: string;

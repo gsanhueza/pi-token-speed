@@ -84,6 +84,9 @@ export class SettingsStorage {
     if (Object.keys(block.colors ?? {}).length === 0) {
       delete block.colors;
     }
+    if (Object.keys(block.displayColors ?? {}).length === 0) {
+      delete block.displayColors;
+    }
     if (Object.keys(block.providerOverrides ?? {}).length === 0) {
       delete block.providerOverrides;
     }

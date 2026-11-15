@@ -5,6 +5,62 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { SettingsStorage } from "../src/config/settings-storage";
 
+describe("SettingsStorage.writeTokenSpeedBlock", () => {
+  let path: string;
+  let storage: SettingsStorage;
+
+  const readBlock = async (): Promise<Record<string, unknown>> => {
+    const raw = JSON.parse(await readFile(path, "utf-8"));
+    return raw.tokenSpeed ?? {};
+  };
+
+  beforeEach(async () => {
+    path = join(await mkdtemp(`${tmpdir()}/`), "settings.json");
+    storage = new SettingsStorage(path);
+  });
+
+  it("does not persist empty displayColors when changing a different setting", async () => {
+    await storage.writeTokenSpeedBlock({ display: "full" });
+
+    expect(await readBlock()).toEqual({ display: "full" });
+    expect((await readBlock()).displayColors).toBeUndefined();
+  });
+
+  it("preserves non-empty displayColors when changing a different setting", async () => {
+    await writeFile(
+      path,
+      JSON.stringify({
+        tokenSpeed: { display: "full", displayColors: { count: "#ff0000" } },
+      }),
+    );
+
+    await storage.writeTokenSpeedBlock({ display: "stats" });
+
+    expect(await readBlock()).toEqual({
+      display: "stats",
+      displayColors: { count: "#ff0000" },
+    });
+  });
+
+  it("removes displayColors when it becomes empty after a write", async () => {
+    await writeFile(
+      path,
+      JSON.stringify({
+        tokenSpeed: { display: "full", displayColors: { count: "" } },
+      }),
+    );
+
+    await storage.writeTokenSpeedBlock({ display: "stats" });
+
+    // displayColors with empty string values still has keys, so it persists
+    // (only truly empty {} objects are removed)
+    expect(await readBlock()).toEqual({
+      display: "stats",
+      displayColors: { count: "" },
+    });
+  });
+});
+
 describe("SettingsStorage.deleteTokenSpeedKeys", () => {
   let path: string;
   let storage: SettingsStorage;

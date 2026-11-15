@@ -8,6 +8,7 @@ import { DisplayColorsGroupSettingsItem } from "./items/display-colors/group";
 import { EndTpsBehaviorSettingsItem } from "./items/end-tps-behavior";
 import { FormatDurationSettingsItem } from "./items/format-duration";
 import { IconSettingsItem } from "./items/icon";
+import { SuffixThemeSettingsItem } from "./items/suffix-theme";
 import { PrefixSettingsItem } from "./items/prefix";
 import { SlidingWindowSettingsItem } from "./items/sliding-window";
 import { THRESHOLD_ITEMS } from "./items/thresholds";
@@ -28,6 +29,7 @@ export const SETTINGS_ITEMS: Record<string, SettingsItem> = {
   slidingWindow: new SlidingWindowSettingsItem(),
   endTpsBehavior: new EndTpsBehaviorSettingsItem(),
   formatDuration: new FormatDurationSettingsItem(),
+  suffixTheme: new SuffixThemeSettingsItem(),
   thresholds: new ThresholdsGroupSettingsItem(),
   colors: new ColorsGroupSettingsItem(),
   displayColors: new DisplayColorsGroupSettingsItem(),

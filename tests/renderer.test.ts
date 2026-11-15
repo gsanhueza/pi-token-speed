@@ -22,6 +22,7 @@ const configRef: { current: TokenSpeedConfig } = {
     prefix: "TPS",
     updateInterval: 0,
     formatDuration: false,
+    suffixTheme: "",
     thresholds: { slow: 10, medium: 30, fast: 60, blazing: 100 },
     colors: {
       slow: "#ffcc00",
@@ -42,6 +43,21 @@ const makeConfig = (
 });
 
 // ---------- helpers ----------
+
+const mockTheme: any = {
+  fg: (_color: string, text: string) => text,
+  bg: (_color: string, text: string) => text,
+  bold: (text: string) => text,
+  italic: (text: string) => text,
+  underline: (text: string) => text,
+  inverse: (text: string) => text,
+  strikethrough: (text: string) => text,
+  getFgAnsi: (_color: string) => "",
+  getBgAnsi: (_color: string) => "",
+  getColorMode: () => "truecolor" as const,
+  getThinkingBorderColor: () => (s: string) => s,
+  getBashModeBorderColor: () => (s: string) => s,
+};
 
 // Shared settings mock that always reads configRef.current
 const settings = {
@@ -124,6 +140,7 @@ describe("Renderer", () => {
       prefix: "TPS",
       updateInterval: 0,
       formatDuration: false,
+      suffixTheme: "",
       thresholds: { slow: 10, medium: 30, fast: 60, blazing: 100 },
       colors: {
         slow: "#ffcc00",
@@ -395,24 +412,29 @@ describe("Renderer", () => {
   // ---- formatStats ----
 
   describe("formatStats", () => {
+    const opts = { theme: mockTheme };
+
     it("shows tokens only when elapsed is zero", () => {
-      const result = (renderer as any).formatStats(100, 0, {});
+      const result = (renderer as any).formatStats(100, 0, opts);
       expect(result).toBe("100 tok");
     });
 
     it("shows tokens and elapsed time", () => {
-      const result = (renderer as any).formatStats(100, 5.3, {});
+      const result = (renderer as any).formatStats(100, 5.3, opts);
       expect(result).toBe("100 tok in 5.3s");
     });
 
     it("rounds elapsed to one decimal place", () => {
-      const result = (renderer as any).formatStats(100, 3.14159, {});
+      const result = (renderer as any).formatStats(100, 3.14159, opts);
       expect(result).toBe("100 tok in 3.1s");
     });
 
     it("uses human-readable units when formatDuration is set", () => {
       expect(
-        (renderer as any).formatStats(150, 92.34, { formatDuration: true }),
+        (renderer as any).formatStats(150, 92.34, {
+          ...opts,
+          formatDuration: true,
+        }),
       ).toBe("150 tok in 1m 32.3s");
     });
   });
@@ -420,7 +442,7 @@ describe("Renderer", () => {
   // ---- buildSuffix ----
 
   describe("buildSuffix", () => {
-    const opts = {};
+    const opts = { theme: mockTheme };
 
     it('returns a zero-width space for "tps" mode', () => {
       const suffix = (renderer as any).buildSuffix("tps", opts);
@@ -470,6 +492,7 @@ describe("Renderer", () => {
         prefix: "TPS",
         updateInterval: 0,
         formatDuration: false,
+        suffixTheme: "",
         thresholds: { slow: 10, medium: 30, fast: 60, blazing: 100 },
         colors: {
           slow: "#ffcc00",
@@ -559,16 +582,22 @@ describe("Renderer", () => {
   // ---- formatStats (displayColors) ----
 
   describe("formatStats (displayColors)", () => {
+    const baseOpts = { theme: mockTheme };
+
     it("returns plain text when no colors are set", () => {
       const colors = { count: "", elapsed: "", ttft: "" };
       expect(
-        (renderer as any).formatStats(150, 6.0, { displayColors: colors }),
+        (renderer as any).formatStats(150, 6.0, {
+          ...baseOpts,
+          displayColors: colors,
+        }),
       ).toBe("150 tok in 6.0s");
     });
 
     it("colors the count when count color is set", () => {
       const colors = { count: "#00ff88", elapsed: "", ttft: "" };
       const result = (renderer as any).formatStats(150, 6.0, {
+        ...baseOpts,
         displayColors: colors,
       });
       expect(result).toContain("\x1b[38;2;0;255;136m150 tok\x1b[0m");
@@ -577,6 +606,7 @@ describe("Renderer", () => {
     it("colors the elapsed when elapsed color is set", () => {
       const colors = { count: "", elapsed: "#ffaa00", ttft: "" };
       const result = (renderer as any).formatStats(150, 6.0, {
+        ...baseOpts,
         displayColors: colors,
       });
       expect(result).toContain("\x1b[38;2;255;170;0m6.0s\x1b[0m");
@@ -585,6 +615,7 @@ describe("Renderer", () => {
     it("colors all parts when all colors are set", () => {
       const colors = { count: "#00ff88", elapsed: "#ffaa00", ttft: "" };
       const result = (renderer as any).formatStats(150, 6.0, {
+        ...baseOpts,
         displayColors: colors,
       });
       expect(result).toContain("\x1b[38;2;0;255;136m150 tok\x1b[0m");
@@ -594,13 +625,17 @@ describe("Renderer", () => {
     it("returns count-only when elapsed is zero", () => {
       const colors = { count: "", elapsed: "", ttft: "" };
       expect(
-        (renderer as any).formatStats(150, 0, { displayColors: colors }),
+        (renderer as any).formatStats(150, 0, {
+          ...baseOpts,
+          displayColors: colors,
+        }),
       ).toBe("150 tok");
     });
 
     it("colors the formatted duration when formatDuration is on", () => {
       const colors = { count: "", elapsed: "#ffaa00", ttft: "" };
       const result = (renderer as any).formatStats(150, 92.34, {
+        ...baseOpts,
         formatDuration: true,
         displayColors: colors,
       });
@@ -609,9 +644,31 @@ describe("Renderer", () => {
 
     it("lowercases accepted hex values", () => {
       const result = (renderer as any).formatStats(100, 1.0, {
+        ...baseOpts,
         displayColors: { count: "#AABBCC", elapsed: "", ttft: "" },
       });
       expect(result).toContain("\x1b[38;2;170;187;204m");
+    });
+  });
+
+  // ---- formatStats (suffixTheme) ----
+
+  describe("formatStats (suffixTheme)", () => {
+    const colorOpts = { theme: mockTheme, suffixTheme: "dim" };
+
+    it("applies dim to uncolored parts when suffixTheme is true", () => {
+      const result = (renderer as any).formatStats(150, 6.0, { ...colorOpts });
+      // mockTheme.fg returns text unchanged, but the call path is exercised
+      expect(result).toBe("150 tok in 6.0s");
+    });
+
+    it("mixes colored and dimmed parts", () => {
+      const result = (renderer as any).formatStats(150, 6.0, {
+        ...colorOpts,
+        displayColors: { count: "#00ff88", elapsed: "", ttft: "" },
+      });
+      expect(result).toContain("\x1b[38;2;0;255;136m150 tok\x1b[0m");
+      expect(result).toContain("in 6.0s");
     });
   });
 

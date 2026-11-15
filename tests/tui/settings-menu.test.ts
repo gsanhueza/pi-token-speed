@@ -36,6 +36,7 @@ const settingsState = vi.hoisted(() => {
     prefix: "TPS",
     updateInterval: 0,
     formatDuration: false,
+    suffixTheme: "" as const,
     thresholds: { slow: 10, medium: 30, fast: 60, blazing: 100 },
     colors: {
       slow: "#ffcc00",

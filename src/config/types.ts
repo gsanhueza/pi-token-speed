@@ -52,6 +52,7 @@ interface TokenSpeedConfigFields {
   prefix: string;
   updateInterval: number; // ms, 0 = update on every delta
   formatDuration: boolean;
+  suffixTheme: string;
   thresholds: Thresholds;
   colors: Colors;
   displayColors: DisplayColors;
@@ -100,6 +101,7 @@ export type PartialConfig = Partial<
   colors?: Partial<Colors>;
   displayColors?: Partial<DisplayColors>;
   formatDuration?: boolean;
+  suffixTheme?: string;
   providerOverrides?: ProviderOverrides;
 };
 

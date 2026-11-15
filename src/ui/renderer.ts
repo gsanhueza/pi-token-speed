@@ -1,4 +1,8 @@
-import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type {
+  ExtensionContext,
+  Theme,
+  ThemeColor,
+} from "@earendil-works/pi-coding-agent";
 import { STATUS_KEY } from "../config/constants";
 import type {
   DisplayColors,
@@ -17,6 +21,10 @@ interface StatsFormatOptions {
   formatDuration?: boolean;
   /** Hex colors for the suffix parts ("" = uncolored). */
   displayColors?: DisplayColors;
+  /** Active theme for styling uncolored parts. */
+  theme: Theme;
+  /** Theme key for uncolored parts (any string; empty = plain text). */
+  suffixTheme: string;
 }
 
 /**
@@ -77,6 +85,8 @@ export class Renderer {
     const suffix = this.buildSuffix(config.display, {
       formatDuration: config.formatDuration,
       displayColors: config.displayColors,
+      theme,
+      suffixTheme: config.suffixTheme,
     });
 
     const icon = config.icon ? `${config.icon}` : "";
@@ -153,11 +163,12 @@ export class Renderer {
 
   /**
    * Formats the stats portion: "<x> tok in <y>s" (or human-readable units).
-   * Colors via `opts.displayColors` when set.
+   * Colors via `opts.displayColors`; uncolored parts use `theme.fg` with
+   * `opts.suffixTheme`, otherwise plain text.
    *
    * @param tokenCount The number of tokens
    * @param elapsedSeconds The elapsed time in seconds
-   * @param opts Formatting options (formatDuration, displayColors).
+   * @param opts Formatting options (formatDuration, displayColors, theme, suffixTheme).
    * @returns The formatted stats string.
    */
   private formatStats(
@@ -166,21 +177,18 @@ export class Renderer {
     opts: StatsFormatOptions,
   ): string {
     const colors = opts.displayColors ?? { count: "", elapsed: "", ttft: "" };
-    const countColored = colors.count
-      ? truecolor(`${tokenCount} tok`, colors.count)
-      : `${tokenCount} tok`;
 
-    if (elapsedSeconds <= 0) return countColored;
+    const count = this.colorOrTheme(`${tokenCount} tok`, colors.count, opts);
+
+    if (elapsedSeconds <= 0) return count;
 
     const elapsedStr = opts.formatDuration
       ? this.formatDuration(elapsedSeconds)
       : `${elapsedSeconds.toFixed(1)}s`;
 
-    const elapsedColored = colors.elapsed
-      ? truecolor(elapsedStr, colors.elapsed)
-      : elapsedStr;
+    const elapsed = this.colorOrTheme(elapsedStr, colors.elapsed, opts);
 
-    return `${countColored} in ${elapsedColored}`;
+    return `${count} ${this.colorOrTheme("in", "", opts)} ${elapsed}`;
   }
 
   private readonly RENDER_SUFFIXES: Record<
@@ -193,27 +201,42 @@ export class Renderer {
     ) => string
   > = {
     tps: () => "\u200b",
-    ttft: (ttft, _, __, opts) =>
-      ` (TTFT: ${
-        opts.displayColors?.ttft
-          ? truecolor(`${ttft} ms`, opts.displayColors.ttft)
-          : `${ttft} ms`
-      })\u200b`,
-    stats: (_, tokens, elapsed, opts) =>
-      ` (${this.formatStats(tokens, elapsed, opts)})\u200b`,
-    full: (ttft, tokens, elapsed, opts) =>
-      ` (${this.formatStats(tokens, elapsed, opts)} · TTFT: ${
-        opts.displayColors?.ttft
-          ? truecolor(`${ttft} ms`, opts.displayColors.ttft)
-          : `${ttft} ms`
-      })\u200b`,
+    ttft: (ttft, _, __, opts) => {
+      const open = this.colorOrTheme("(", "", opts);
+      const label = this.colorOrTheme("TTFT: ", "", opts);
+      const val = this.colorOrTheme(
+        `${ttft} ms`,
+        opts.displayColors?.ttft ?? "",
+        opts,
+      );
+      const close = this.colorOrTheme(")", "", opts);
+      return ` ${open}${label}${val}${close}\u200b`;
+    },
+    stats: (_, tokens, elapsed, opts) => {
+      const open = this.colorOrTheme("(", "", opts);
+      const close = this.colorOrTheme(")", "", opts);
+      return ` ${open}${this.formatStats(tokens, elapsed, opts)}${close}\u200b`;
+    },
+    full: (ttft, tokens, elapsed, opts) => {
+      const open = this.colorOrTheme("(", "", opts);
+      const stats = this.formatStats(tokens, elapsed, opts);
+      const sep = this.colorOrTheme(" · ", "", opts);
+      const ttftLabel = this.colorOrTheme("TTFT: ", "", opts);
+      const val = this.colorOrTheme(
+        `${ttft} ms`,
+        opts.displayColors?.ttft ?? "",
+        opts,
+      );
+      const close = this.colorOrTheme(")", "", opts);
+      return ` ${open}${stats}${sep}${ttftLabel}${val}${close}\u200b`;
+    },
   };
 
   /**
    * Builds a suffix for the status bar after the TPS measurement.
    *
    * @param display Display mode to check against
-   * @param opts Formatting options for the stats portion.
+   * @param opts Formatting options for the stats portion (includes theme).
    * @returns The suffix to append
    */
   private buildSuffix(display: DisplayMode, opts: StatsFormatOptions): string {
@@ -244,5 +267,19 @@ export class Renderer {
    */
   resetThrottle(): void {
     this.lastUpdateTime = 0;
+  }
+
+  /**
+   * Returns `text` colored with `hex`, themed by `suffixTheme`, or plain.
+   */
+  private colorOrTheme(
+    text: string,
+    hex: string,
+    opts: StatsFormatOptions,
+  ): string {
+    if (hex) return truecolor(text, hex);
+    if (opts.suffixTheme)
+      return opts.theme.fg(opts.suffixTheme as ThemeColor, text);
+    return text;
   }
 }

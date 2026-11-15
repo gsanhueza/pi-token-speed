@@ -63,7 +63,8 @@ You can customize the display, speed thresholds and colors by adding a `tokenSpe
     "prefix": "TPS",
     "slidingWindow": 1000,
     "updateInterval": 0,
-    "formatDuration": false
+    "formatDuration": false,
+    "suffixTheme": ""
   }
 }
 ```
@@ -142,6 +143,7 @@ Invalid configuration values are automatically corrected to their defaults. A wa
 | `prefix`             | string                         | `"TPS"`     | Prefix label shown before the measurement                                                         |
 | `updateInterval`     | number                         | `0`         | Status bar update interval in ms (0 = every delta)                                                |
 | `formatDuration`     | boolean                        | `false`     | Show elapsed time in human-readable units (see [Duration Formatting](#duration-formatting))       |
+| `suffixTheme`        | `""`, `"dim"`, `"muted"`       | `""`        | Style for uncolored suffix parts (empty, dim, or muted)                                           |
 | `displayColors`      | object                         | `{}`        | Hex colors for the suffix parts (see [Display Color Customization](#display-color-customization)) |
 | `providerOverrides`  | object                         | `{}`        | Per-provider config overrides (see [Provider Overrides](#provider-overrides))                     |
 
@@ -161,6 +163,7 @@ A small interactive menu is available when running `/tps` in the editor, where y
 - **Thresholds** — customize the TPS threshold values for each tier (see [Threshold Customization](#threshold-customization))
 - **Colors** — customize the hex color for each TPS tier (see [Color Customization](#color-customization))
 - **Display colors** — customize the hex color for the suffix parts (count, elapsed, ttft) (see [Display Color Customization](#display-color-customization))
+- **Suffix theming** — choose how uncolored suffix parts are styled (empty, dim, or muted) (see [Suffix Theming](#suffix-theming))
 
 Per-provider overrides are managed separately via `/tps overrides` (see [Provider Overrides](#provider-overrides)).
 
@@ -283,6 +286,28 @@ When set, the status bar suffix renders like:
 where "150 tok" is green, "6.0s" is orange, and "450 ms" is cyan.
 
 Display colors are independent from tier colors — they can be used together for a fully customized status bar.
+
+### Suffix Theming
+
+When `displayColors` is not set (or a part is empty), the suffix renders with the terminal's default foreground color. Set `suffixTheme` to `"dim"` or `"muted"` to style uncolored parts with the active theme instead:
+
+```json
+{
+  "tokenSpeed": {
+    "suffixTheme": "dim"
+  }
+}
+```
+
+Available values:
+
+- `""` (default) — no styling (terminal default)
+- `"dim"` — use the theme's dim color
+- `"muted"` — use the theme's muted color
+
+With `suffixTheme` set and no `displayColors`, the entire suffix follows the chosen theme color. With both `suffixTheme` and `displayColors` set, colored parts use the specified hex colors while uncolored parts use the chosen theme color.
+
+Suffix theming is independent from display colors and tier colors — they can be used together for a fully customized status bar.
 
 ### Threshold Customization
 

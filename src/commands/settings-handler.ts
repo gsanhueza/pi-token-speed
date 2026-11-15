@@ -41,6 +41,7 @@ export class SettingsHandler extends BaseMenuHandler {
       settings: this.settings,
       onSettingChange: () => {
         this.engine.initialize();
+        this.renderer.resetThrottle();
         this.renderer.update(ctx);
       },
       onWarning: (message) => ctx.ui.notify(message, "warning"),

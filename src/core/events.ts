@@ -106,6 +106,7 @@ export class EventManager {
     }, 0);
 
     this.engine.reconcileTotal(outputTokens);
+    this.renderer.resetThrottle();
     this.renderer.update(ctx);
   }
 }

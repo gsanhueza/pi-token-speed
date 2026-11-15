@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type {
+  AgentEndEvent,
+  ExtensionContext,
+} from "@earendil-works/pi-coding-agent";
+import { EventManager } from "../src/core/events";
 import { STATUS_KEY } from "../src/config/constants";
 import type { TokenSpeedConfig } from "../src/config/types";
 import { TokenSpeedEngine } from "../src/core/engine";
@@ -475,6 +479,20 @@ describe("Renderer", () => {
       renderer.resetThrottle();
       expect((renderer as any).lastUpdateTime).toBe(0);
     });
+
+    it("unblocks update() even when the interval has not elapsed", () => {
+      configRef.current = makeConfig({ updateInterval: 50000 });
+      renderer = new Renderer(engine, settings as any);
+      const renderSpy = vi.spyOn(renderer as any, "render");
+
+      // Simulate a recent mid-stream render
+      (renderer as any).lastUpdateTime = Date.now();
+
+      // resetThrottle + update should fire render
+      renderer.resetThrottle();
+      renderer.update(ctx);
+      expect(renderSpy).toHaveBeenCalledTimes(1);
+    });
   });
 
   // ---- formatStats (displayColors) ----
@@ -599,6 +617,31 @@ describe("Renderer", () => {
       expect(calledWith).toContain("\x1b[38;2;0;255;136m");
       expect(calledWith).toContain("\x1b[38;2;255;170;0m");
       expect(calledWith).toContain("\x1b[38;2;68;221;255m");
+    });
+  });
+
+  // ---- handleAgentEnd integration ----
+
+  describe("handleAgentEnd integration", () => {
+    it("calls resetThrottle before update so the final render is not suppressed", () => {
+      configRef.current = makeConfig({ updateInterval: 50000 });
+      const resetSpy = vi.spyOn(renderer, "resetThrottle");
+      const updateSpy = vi.spyOn(renderer as any, "update");
+
+      const eventManager = new EventManager(engine, renderer, settings as any);
+      const ctx = makeContext();
+      const event: AgentEndEvent = {
+        messages: [{ role: "assistant", usage: { output: 42 } }],
+      } as AgentEndEvent;
+
+      eventManager.handleAgentEnd(event, ctx);
+
+      expect(resetSpy).toHaveBeenCalledOnce();
+      expect(updateSpy).toHaveBeenCalledOnce();
+      // resetThrottle must come before update
+      const resetIdx = resetSpy.mock.invocationCallOrder[0];
+      const updateIdx = updateSpy.mock.invocationCallOrder[0];
+      expect(resetIdx).toBeLessThan(updateIdx);
     });
   });
 });

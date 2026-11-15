@@ -60,6 +60,7 @@ You can customize the display, speed thresholds and colors by adding a `tokenSpe
     "countStrategy": "direct",
     "endTpsBehavior": "average",
     "icon": "⚡",
+    "prefix": "TPS",
     "slidingWindow": 1000,
     "updateInterval": 0,
     "formatDuration": false
@@ -137,7 +138,8 @@ Invalid configuration values are automatically corrected to their defaults. A wa
 | `useProviderTokens`  | boolean                        | `false`     | Opt-in: use provider-reported count instead of the extension one                                  |
 | `countStrategy`      | `estimate`, `direct`           | `direct`    | Token counting strategy used by the extension's own counter                                       |
 | `endTpsBehavior`     | `average`, `last`              | `average`   | What to show after streaming ends                                                                 |
-| `icon`               | string                         | `"⚡"`      | Icon shown before TPS in the status bar                                                           |
+| `icon`               | string                         | `"⚡"`      | Icon shown before the prefix label in the status bar                                              |
+| `prefix`             | string                         | `"TPS"`     | Prefix label shown before the measurement                                                         |
 | `updateInterval`     | number                         | `0`         | Status bar update interval in ms (0 = every delta)                                                |
 | `formatDuration`     | boolean                        | `false`     | Show elapsed time in human-readable units (see [Duration Formatting](#duration-formatting))       |
 | `displayColors`      | object                         | `{}`        | Hex colors for the suffix parts (see [Display Color Customization](#display-color-customization)) |
@@ -148,7 +150,8 @@ Invalid configuration values are automatically corrected to their defaults. A wa
 A small interactive menu is available when running `/tps` in the editor, where you can adjust:
 
 - **Display mode** — what to show in the status bar
-- **Status icon** — choose the icon shown before TPS (`⚡`, `🔥`, `💨`, `🚀`, or none)
+- **Status icon** — choose the icon shown before the prefix label (`⚡`, `🔥`, `💨`, `🚀`, or none)
+- **Status prefix** — customize the label before the measurement (`"TPS"`, `"Speed"`, or none)
 - **Status update interval** — throttle status bar updates (see [Status Update Interval](#status-update-interval))
 - **Use provider tokens** — use provider-reported counts instead of the extension's counter
 - **Count strategy** — how the extension counts tokens (`estimate` or `direct`)
@@ -384,7 +387,7 @@ The settings menu is described in detail in [Interactive Menu](#interactive-menu
 
 ## How It Works
 
-1. **Session Start** — Renders the initial status bar entry showing the configured icon followed by `TPS: --`
+1. **Session Start** — Renders the initial status bar entry showing the configured icon and prefix label (default: `⚡ TPS: --`)
 2. **Message Start** — When a user message starts, TTFT measurement begins
 3. **First Token & Streaming Start** — The moment the first content block starts (`text_start`, `thinking_start`, or `toolcall_start`), the TTFT is recorded and the streaming engine starts tracking
 4. **Token Update** — Each text, thinking, and tool-call delta is recorded. If `useProviderTokens` is `true` and the provider reports token counts, those are used directly; otherwise the extension's own counter (controlled by `countStrategy`) is used

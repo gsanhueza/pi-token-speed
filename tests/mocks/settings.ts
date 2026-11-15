@@ -13,6 +13,7 @@ export const defaultConfig: TokenSpeedConfig = {
   countStrategy: "direct",
   endTpsBehavior: "average",
   icon: "⚡",
+  prefix: "TPS",
   updateInterval: 0,
   formatDuration: false,
   thresholds: { slow: 10, medium: 30, fast: 60, blazing: 100 },

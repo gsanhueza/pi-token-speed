@@ -79,8 +79,12 @@ export class Renderer {
       displayColors: config.displayColors,
     });
 
-    const icon = config.icon ? `${config.icon} ` : "";
-    const prefix = theme.fg("dim", `${icon}TPS:`);
+    const icon = config.icon ? `${config.icon}` : "";
+    const label = config.prefix ? `${config.prefix}:` : "";
+    const prefix = theme.fg(
+      "dim",
+      `${icon}${icon && label ? " " : ""}${label}`,
+    );
     const text = `${prefix} ${displayValue}${suffix}`;
 
     ctx.ui.setStatus(STATUS_KEY, text);
@@ -225,8 +229,12 @@ export class Renderer {
   initialize(ctx: ExtensionContext): void {
     const theme = ctx.ui.theme;
     const config = this.settings.resolveConfig(ctx.model?.provider);
-    const icon = config.icon ? `${config.icon} ` : "";
-    const prefix = theme.fg("dim", `${icon}TPS:`);
+    const icon = config.icon ? `${config.icon}` : "";
+    const label = config.prefix ? `${config.prefix}:` : "";
+    const prefix = theme.fg(
+      "dim",
+      `${icon}${icon && label ? " " : ""}${label}`,
+    );
     const text = `${prefix} --`;
     ctx.ui.setStatus(STATUS_KEY, text);
   }

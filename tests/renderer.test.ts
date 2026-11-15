@@ -19,6 +19,7 @@ const configRef: { current: TokenSpeedConfig } = {
     countStrategy: "direct",
     endTpsBehavior: "average",
     icon: "⚡",
+    prefix: "TPS",
     updateInterval: 0,
     formatDuration: false,
     thresholds: { slow: 10, medium: 30, fast: 60, blazing: 100 },
@@ -120,6 +121,7 @@ describe("Renderer", () => {
       countStrategy: "direct",
       endTpsBehavior: "average",
       icon: "⚡",
+      prefix: "TPS",
       updateInterval: 0,
       formatDuration: false,
       thresholds: { slow: 10, medium: 30, fast: 60, blazing: 100 },
@@ -212,6 +214,34 @@ describe("Renderer", () => {
       expect(setStatusSpy).toHaveBeenCalledWith(
         STATUS_KEY,
         expect.not.stringContaining("🚀"),
+      );
+    });
+
+    it("uses a custom prefix label", () => {
+      const setStatusSpy = vi.spyOn(ctx.ui, "setStatus");
+      configRef.current = makeConfig({ prefix: "Speed" });
+      renderer = new Renderer(engine, settings as any);
+      engine["_tps"] = 10;
+
+      (renderer as any).render(ctx);
+
+      expect(setStatusSpy).toHaveBeenCalledWith(
+        STATUS_KEY,
+        expect.stringContaining("Speed:"),
+      );
+    });
+
+    it("omits the label but keeps the icon when prefix is empty", () => {
+      const setStatusSpy = vi.spyOn(ctx.ui, "setStatus");
+      configRef.current = makeConfig({ prefix: "" });
+      renderer = new Renderer(engine, settings as any);
+      engine["_tps"] = 10;
+
+      (renderer as any).render(ctx);
+
+      expect(setStatusSpy).toHaveBeenCalledWith(
+        STATUS_KEY,
+        expect.stringContaining("⚡"),
       );
     });
 
@@ -437,6 +467,7 @@ describe("Renderer", () => {
         countStrategy: "direct",
         endTpsBehavior: "average",
         icon: "⚡",
+        prefix: "TPS",
         updateInterval: 0,
         formatDuration: false,
         thresholds: { slow: 10, medium: 30, fast: 60, blazing: 100 },
@@ -468,6 +499,36 @@ describe("Renderer", () => {
       renderer.initialize(ctx);
 
       expect(setStatusSpy).toHaveBeenCalledWith(STATUS_KEY, "TPS: --");
+    });
+
+    it("omits the label but keeps the icon when prefix is empty", () => {
+      const setStatusSpy = vi.spyOn(ctx.ui, "setStatus");
+      configRef.current = makeConfig({ prefix: "" });
+      renderer = new Renderer(engine, settings as any);
+
+      renderer.initialize(ctx);
+
+      expect(setStatusSpy).toHaveBeenCalledWith(STATUS_KEY, "⚡ --");
+    });
+
+    it("uses a custom prefix label", () => {
+      const setStatusSpy = vi.spyOn(ctx.ui, "setStatus");
+      configRef.current = makeConfig({ prefix: "Speed" });
+      renderer = new Renderer(engine, settings as any);
+
+      renderer.initialize(ctx);
+
+      expect(setStatusSpy).toHaveBeenCalledWith(STATUS_KEY, "⚡ Speed: --");
+    });
+
+    it("uses a custom prefix with an icon", () => {
+      const setStatusSpy = vi.spyOn(ctx.ui, "setStatus");
+      configRef.current = makeConfig({ prefix: "Speed", icon: "🔥" });
+      renderer = new Renderer(engine, settings as any);
+
+      renderer.initialize(ctx);
+
+      expect(setStatusSpy).toHaveBeenCalledWith(STATUS_KEY, "🔥 Speed: --");
     });
   });
 

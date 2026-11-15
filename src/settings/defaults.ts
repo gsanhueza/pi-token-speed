@@ -8,6 +8,7 @@ import { DisplayColorsGroupSettingsItem } from "./items/display-colors/group";
 import { EndTpsBehaviorSettingsItem } from "./items/end-tps-behavior";
 import { FormatDurationSettingsItem } from "./items/format-duration";
 import { IconSettingsItem } from "./items/icon";
+import { PrefixSettingsItem } from "./items/prefix";
 import { SlidingWindowSettingsItem } from "./items/sliding-window";
 import { THRESHOLD_ITEMS } from "./items/thresholds";
 import { ThresholdsGroupSettingsItem } from "./items/thresholds/group";
@@ -20,6 +21,7 @@ import { UseProviderTokensSettingsItem } from "./items/use-provider-tokens";
 export const SETTINGS_ITEMS: Record<string, SettingsItem> = {
   display: new DisplaySettingsItem(),
   icon: new IconSettingsItem(),
+  prefix: new PrefixSettingsItem(),
   updateInterval: new UpdateIntervalSettingsItem(),
   useProviderTokens: new UseProviderTokensSettingsItem(),
   countStrategy: new CountStrategySettingsItem(),

@@ -206,6 +206,41 @@ describe("TokenSpeedEngine", () => {
       expect(engine.tokenCount).toBe(2);
       expect(engine.elapsedMs).toBeGreaterThanOrEqual(0);
     });
+
+    it("does not leak pause state across streams", () => {
+      // Stream 1: pause then stop (no resume) — simulates toolcall_end → message_end
+      const eng = new TimeMockedEngine(settings, 1000);
+      eng.initialize();
+      eng.start();
+      eng.recordDelta("x");
+      eng.pause();
+      eng.tick(5000); // 5s idle while paused
+      eng.stop();
+
+      // Stream 2: start fresh — pause must NOT carry over
+      eng.start();
+      eng.tick(100);
+      eng.recordDelta("x"); // triggers resume (now a no-op since _isPaused is false)
+      eng.tick(1000); // 1s of actual streaming
+
+      // elapsedMs should be ~1000ms, NOT 5000ms+
+      expect(eng.elapsedMs).toBeLessThan(2000);
+      expect(eng.tpsAvg).toBeGreaterThan(0);
+    });
+
+    it("accounts for trailing pause in stop()", () => {
+      const eng = new TimeMockedEngine(settings, 1000);
+      eng.initialize();
+      eng.start();
+      eng.recordDelta("x");
+      eng.pause();
+      eng.tick(5000); // pause for 5s
+      eng.stop(); // should include the 5s in _pausedMs, not in elapsedMs
+
+      // The whole duration was paused: elapsedMs should be ~0
+      // (before the fix it would be ~5000 because the pause wasn't subtracted)
+      expect(eng.elapsedMs).toBeLessThan(100);
+    });
   });
 
   // ── tps behavior ──────────────────────────────────────────────────────

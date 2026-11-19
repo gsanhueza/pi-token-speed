@@ -195,6 +195,8 @@ export class TokenSpeedEngine {
     if (this._isStreaming) return;
 
     this._tokenCount = 0;
+    this._isPaused = false;
+    this._startPause = 0;
     this._isStreaming = true;
     this._startTime = this.now();
     this._endTime = this.now();

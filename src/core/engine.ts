@@ -227,6 +227,7 @@ export class TokenSpeedEngine {
   stop(): void {
     this._isStreaming = false;
     this._endTime = this.now();
+    if (this._isPaused) this._pausedMs += this._endTime - this._startPause;
     this._slidingWindow.reset();
   }
 

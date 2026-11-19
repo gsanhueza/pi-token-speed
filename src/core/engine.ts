@@ -256,7 +256,7 @@ export class TokenSpeedEngine {
     if (!this._isStreaming || tokens <= 0) return;
 
     this._tokenCount += tokens;
-    this._slidingWindow.record(tokens);
+    this._slidingWindow.record(tokens, this.now());
     this._tps = this._slidingWindow.getTps(this.now());
   }
 
